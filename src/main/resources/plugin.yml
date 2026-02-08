@@ -1,23 +1,38 @@
-name: WRP-HubStatus
+name: SurvivalCorePlus
 version: ${project.version}
-main: net.wrpnetwork.hubstatus.WRPHubStatus
-api-version: 1.20
-author: EGG Producciones
-description: WRP Hub Status System for WYLRP
+main: net.wrpnetwork.survivalcore.SurvivalCore
+api-version: '1.20'
+authors: [Wyl, Ari]
+description: Core de supervivencia, construcción y calidad de vida.
+website: https://wrpnetwork.net
+softdepend: [PlaceholderAPI]
 commands:
-  wrphub:
-    description: Main command for WRP-HubStatus
-    permission: wrphub.use
-permissions:
-  wrphub.use:
-    description: Allow using the Hub status item
-    default: true
-  wrphub.admin:
-    description: Administrative commands
-    default: op
-  wrphub.reload:
-    description: Reload the configuration
-    default: op
-  wrphub.setstate:
-    description: Change the server state
-    default: op
+  survivalcore:
+    description: Comando principal de SurvivalCore+
+    aliases: [sc]
+  spawn:
+    description: Teletransportarse al spawn
+  tpa:
+    description: Solicitar teletransporte a un jugador
+  tpaccept:
+    description: Aceptar solicitud de teletransporte
+  tpdeny:
+    description: Denegar solicitud de teletransporte
+  back:
+    description: Volver a la ubicación anterior o de muerte
+  sethome:
+    description: Establecer un hogar
+  home:
+    description: Ir a un hogar
+  homes:
+    description: Listar hogares
+  delhome:
+    description: Eliminar un hogar
+  fly:
+    description: Alternar modo vuelo
+  repair:
+    description: Reparar el objeto en mano
+  buildmode:
+    description: Alternar modo construcción
+  tumba:
+    description: Información sobre tu tumba

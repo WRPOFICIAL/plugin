@@ -1,4 +1,5 @@
-product: "WRP-HubStatus"
-version: "1.0"
-author: "EGG PRODUCCIONES OFICIAL"
-copyright: "WYLRP© – Todos los derechos reservados"
+owner: "WRP"
+developers:
+  - "Wyl"
+  - "Ari"
+license: "Privada"
