@@ -25,6 +25,12 @@ public class ClanListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onChat(AsyncChatEvent event) {
+        if (!plugin.getChatManager().isGlobalChatEnabled() && !event.getPlayer().hasPermission("survivalcore.admin")) {
+            event.setCancelled(true);
+            plugin.getMessageManager().sendMessage(event.getPlayer(), "<red>El chat global está desactivado actualmente.</red>");
+            return;
+        }
+
         DatabaseManager.ClanData clan = plugin.getDatabaseManager().getClanByMember(event.getPlayer().getUniqueId());
 
         if (clan != null) {

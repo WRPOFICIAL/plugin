@@ -47,3 +47,16 @@ commands:
     description: Spawnear un NPC de tienda
   clan:
     description: Comandos de clan
+  msg:
+    description: Enviar mensaje privado
+    aliases: [m, tell, w]
+  reply:
+    description: Responder último mensaje
+    aliases: [r]
+  clanchat:
+    description: Chat del clan
+    aliases: [c]
+  togglechat:
+    description: Alternar chat global
+  tienda:
+    description: Abrir la tienda de venta

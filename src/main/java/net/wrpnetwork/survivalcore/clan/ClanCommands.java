@@ -35,6 +35,10 @@ public class ClanCommands implements CommandExecutor {
 
         switch (args[0].toLowerCase()) {
             case "create":
+                if (!player.hasPermission("survivalcore.clan.create")) {
+                    plugin.getMessageManager().sendMessage(player, plugin.getConfig().getString("messages.no-permission"));
+                    return true;
+                }
                 if (args.length < 3) {
                     plugin.getMessageManager().sendMessage(player, "<red>Uso: /clan create <nombre> <lema/tag></red>");
                     plugin.getMessageManager().sendMessage(player, "<grey>Ejemplo: /clan create Zombies Z</grey>");
@@ -56,6 +60,9 @@ public class ClanCommands implements CommandExecutor {
                 break;
             case "accept":
                 plugin.getClanManager().acceptInvite(player);
+                break;
+            case "delete":
+                handleDelete(player);
                 break;
             case "sethome":
                 handleSetHome(player);
@@ -174,5 +181,28 @@ public class ClanCommands implements CommandExecutor {
         plugin.getDatabaseManager().removeClanMember(player.getUniqueId());
         plugin.getMessageManager().sendMessage(player, "<yellow>Has salido del clan.</yellow>");
         plugin.getClanManager().updateNametag(player);
+    }
+
+    private void handleDelete(Player player) {
+        DatabaseManager.ClanData clan = plugin.getDatabaseManager().getClanByMember(player.getUniqueId());
+        if (clan == null || !clan.leader().equals(player.getUniqueId())) {
+            plugin.getMessageManager().sendMessage(player, "<red>✖ Solo el líder puede disolver el clan.</red>");
+            return;
+        }
+
+        // Update all members nametags
+        List<DatabaseManager.ClanMemberData> members = plugin.getDatabaseManager().getClanMembers(clan.id());
+        plugin.getDatabaseManager().deleteClan(clan.id());
+
+        plugin.getMessageManager().sendMessage(player, "<red>El clan ha sido disuelto.</red>");
+        for (DatabaseManager.ClanMemberData m : members) {
+            Player p = Bukkit.getPlayer(m.uuid());
+            if (p != null) {
+                plugin.getClanManager().updateNametag(p);
+                if (!p.equals(player)) {
+                    plugin.getMessageManager().sendMessage(p, "<red>Tu clan ha sido disuelto por el líder.</red>");
+                }
+            }
+        }
     }
 }

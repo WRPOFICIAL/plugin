@@ -38,7 +38,7 @@ public class NPCManager implements Listener {
     public void onInteract(PlayerInteractEntityEvent event) {
         if (event.getRightClicked().getPersistentDataContainer().has(npcKey, PersistentDataType.INTEGER)) {
             event.setCancelled(true);
-            shopGUI.openShop(event.getPlayer(), true);
+            shopGUI.openCategories(event.getPlayer(), true);
         }
     }
 

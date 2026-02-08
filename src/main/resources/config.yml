@@ -5,6 +5,18 @@
 # Licencia Privada - Uso exclusivo.
 # ══════════════════════════════════════════════════════════════════════════
 
+# ══════════════════════════════════════════════════════════════════════════
+# GUÍA DE PERMISOS (WRP · PERMISSIONS)
+# ══════════════════════════════════════════════════════════════════════════
+# - survivalcore.admin: Acceso a todos los comandos de administración.
+# - survivalcore.fly: Permiso para volar (/fly).
+# - survivalcore.repair: Permiso para reparar (/repair).
+# - survivalcore.buildmode: Permiso para modo construcción.
+# - survivalcore.homes.vip: Límite extendido de hogares.
+# - survivalcore.protection.bypass: Ignorar protecciones de otros.
+# - survivalcore.clan.create: Crear clanes.
+# ══════════════════════════════════════════════════════════════════════════
+
 # Activa o desactiva los módulos principales del plugin.
 modules:
   teleport: true
@@ -110,9 +122,30 @@ clans:
 # SISTEMA DE TIENDA Y ECONOMÍA (WRP · SHOP)
 # ══════════════════════════════════════════════════════════════════════════
 # La tienda se divide en COMPRA (vía NPCs) y VENTA (vía comando /tienda).
+# ══════════════════════════════════════════════════════════════════════════
+# SISTEMA DE TIENDA Y ECONOMÍA (WRP · SHOP)
+# ══════════════════════════════════════════════════════════════════════════
+# La tienda se divide en COMPRA (vía NPCs) y VENTA (vía comando /tienda).
+# Los NPCs abren las categorías para comprar.
+# El comando /tienda abre las categorías para vender.
 shop:
   title: "<dark_aqua>🛒 Tienda WRP · Compra</dark_aqua>"
   sell-title: "<dark_green>💰 Tienda WRP · Venta</dark_green>"
+  category-title: "<dark_aqua>📂 Categorías de Tienda</dark_aqua>"
+
+  categories:
+    blocks:
+      name: "<blue>Bloques</blue>"
+      material: GRASS_BLOCK
+      slot: 11
+    materials:
+      name: "<gold>Materiales</gold>"
+      material: DIAMOND
+      slot: 13
+    special:
+      name: "<red>Especial</red>"
+      material: NETHER_STAR
+      slot: 15
 
   # Lista de ítems disponibles.
   # material: Material de Minecraft (MAYÚSCULAS).
@@ -121,24 +154,28 @@ shop:
   # special: 'upgrade_core' para el ítem de mejora, dejar vacío para ítems normales.
   items:
     diamond:
+      category: materials
       material: DIAMOND
       name: "Diamante"
       buy-price: 500
       sell-price: 100
       slot: 10
     gold_ingot:
+      category: materials
       material: GOLD_INGOT
       name: "Lingote de Oro"
       buy-price: 200
       sell-price: 40
       slot: 11
     iron_ingot:
+      category: materials
       material: IRON_INGOT
       name: "Lingote de Hierro"
       buy-price: 100
       sell-price: 20
       slot: 12
     upgrade_core:
+      category: special
       material: NETHER_STAR
       name: "<gold>Núcleo de Mejora</gold>"
       buy-price: 5000

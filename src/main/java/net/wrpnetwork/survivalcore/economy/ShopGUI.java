@@ -27,19 +27,45 @@ public class ShopGUI implements Listener {
         this.itemKey = new NamespacedKey(plugin, "shop_item_id");
     }
 
-    public void openShop(Player player, boolean isBuy) {
+    public void openCategories(Player player, boolean isBuy) {
+        String title = plugin.getConfig().getString("shop.category-title", "<dark_aqua>📂 Categorías de Tienda</dark_aqua>");
+        Inventory inv = Bukkit.createInventory(null, 27, plugin.getMessageManager().parse(title));
+
+        if (plugin.getConfig().getConfigurationSection("shop.categories") != null) {
+            for (String key : plugin.getConfig().getConfigurationSection("shop.categories").getKeys(false)) {
+                String path = "shop.categories." + key + ".";
+                Material mat = Material.valueOf(plugin.getConfig().getString(path + "material", "PAPER"));
+                String name = plugin.getConfig().getString(path + "name", key);
+                int slot = plugin.getConfig().getInt(path + "slot", 0);
+
+                ItemStack item = new ItemStack(mat);
+                ItemMeta meta = item.getItemMeta();
+                meta.displayName(plugin.getMessageManager().parse(name));
+                meta.getPersistentDataContainer().set(new NamespacedKey(plugin, "category_id"), PersistentDataType.STRING, key);
+                meta.getPersistentDataContainer().set(new NamespacedKey(plugin, "is_buy"), PersistentDataType.INTEGER, isBuy ? 1 : 0);
+                item.setItemMeta(meta);
+                inv.setItem(slot, item);
+            }
+        }
+        player.openInventory(inv);
+    }
+
+    public void openShop(Player player, boolean isBuy, String category) {
         String title = isBuy ? plugin.getConfig().getString("shop.title", "<dark_aqua>🛒 Tienda WRP · Compra</dark_aqua>")
                             : plugin.getConfig().getString("shop.sell-title", "<dark_green>💰 Tienda WRP · Venta</dark_green>");
-        Inventory inv = Bukkit.createInventory(null, 27, plugin.getMessageManager().parse(title));
+        Inventory inv = Bukkit.createInventory(null, 54, plugin.getMessageManager().parse(title));
 
         if (plugin.getConfig().getConfigurationSection("shop.items") != null) {
             for (String key : plugin.getConfig().getConfigurationSection("shop.items").getKeys(false)) {
                 String path = "shop.items." + key + ".";
-                Material mat = Material.valueOf(plugin.getConfig().getString(path + "material"));
-                String name = plugin.getConfig().getString(path + "name");
-                double buy = isBuy ? plugin.getConfig().getDouble(path + "buy-price") : 0;
-                double sell = !isBuy ? plugin.getConfig().getDouble(path + "sell-price") : 0;
-                int slot = plugin.getConfig().getInt(path + "slot");
+                String itemCategory = plugin.getConfig().getString(path + "category", "none");
+                if (!itemCategory.equalsIgnoreCase(category)) continue;
+
+                Material mat = Material.valueOf(plugin.getConfig().getString(path + "material", "STONE"));
+                String name = plugin.getConfig().getString(path + "name", key);
+                double buy = isBuy ? plugin.getConfig().getDouble(path + "buy-price", 0) : 0;
+                double sell = !isBuy ? plugin.getConfig().getDouble(path + "sell-price", 0) : 0;
+                int slot = plugin.getConfig().getInt(path + "slot", 0);
                 String special = plugin.getConfig().getString(path + "special", "");
 
                 if (isBuy && buy <= 0) continue;
@@ -48,6 +74,14 @@ public class ShopGUI implements Listener {
                 addItem(inv, slot, mat, name, buy, sell, special, isBuy);
             }
         }
+
+        // Back button
+        ItemStack back = new ItemStack(Material.ARROW);
+        ItemMeta backMeta = back.getItemMeta();
+        backMeta.displayName(plugin.getMessageManager().parse("<red>Volver</red>"));
+        backMeta.getPersistentDataContainer().set(new NamespacedKey(plugin, "back_to_cats"), PersistentDataType.INTEGER, isBuy ? 1 : 0);
+        back.setItemMeta(backMeta);
+        inv.setItem(49, back);
 
         player.openInventory(inv);
     }
@@ -82,12 +116,14 @@ public class ShopGUI implements Listener {
     public void onClick(InventoryClickEvent event) {
         String buyTitle = plugin.getConfig().getString("shop.title", "<dark_aqua>🛒 Tienda WRP · Compra</dark_aqua>");
         String sellTitle = plugin.getConfig().getString("shop.sell-title", "<dark_green>💰 Tienda WRP · Venta</dark_green>");
+        String catTitle = plugin.getConfig().getString("shop.category-title", "<dark_aqua>📂 Categorías de Tienda</dark_aqua>");
         Component viewTitle = event.getView().title();
 
         boolean isBuy = viewTitle.equals(plugin.getMessageManager().parse(buyTitle));
         boolean isSell = viewTitle.equals(plugin.getMessageManager().parse(sellTitle));
+        boolean isCat = viewTitle.equals(plugin.getMessageManager().parse(catTitle));
 
-        if (!isBuy && !isSell) return;
+        if (!isBuy && !isSell && !isCat) return;
         event.setCancelled(true);
 
         if (event.getCurrentItem() == null || event.getCurrentItem().getType() == Material.AIR) return;
@@ -95,6 +131,21 @@ public class ShopGUI implements Listener {
         Player player = (Player) event.getWhoClicked();
         ItemStack item = event.getCurrentItem();
         ItemMeta meta = item.getItemMeta();
+
+        if (isCat) {
+            String category = meta.getPersistentDataContainer().get(new NamespacedKey(plugin, "category_id"), PersistentDataType.STRING);
+            Integer buyInt = meta.getPersistentDataContainer().get(new NamespacedKey(plugin, "is_buy"), PersistentDataType.INTEGER);
+            if (category != null && buyInt != null) {
+                openShop(player, buyInt == 1, category);
+            }
+            return;
+        }
+
+        if (meta.getPersistentDataContainer().has(new NamespacedKey(plugin, "back_to_cats"), PersistentDataType.INTEGER)) {
+            Integer buyInt = meta.getPersistentDataContainer().get(new NamespacedKey(plugin, "back_to_cats"), PersistentDataType.INTEGER);
+            openCategories(player, buyInt == 1);
+            return;
+        }
 
         Double buyPrice = meta.getPersistentDataContainer().get(new NamespacedKey(plugin, "buy_price"), PersistentDataType.DOUBLE);
         Double sellPrice = meta.getPersistentDataContainer().get(new NamespacedKey(plugin, "sell_price"), PersistentDataType.DOUBLE);

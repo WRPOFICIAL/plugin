@@ -22,6 +22,9 @@ public class SurvivalCore extends JavaPlugin {
     private net.wrpnetwork.survivalcore.economy.NPCManager npcManager;
     private net.wrpnetwork.survivalcore.protection.ProtectionManager protectionManager;
     private net.wrpnetwork.survivalcore.clan.ClanManager clanManager;
+    private net.wrpnetwork.survivalcore.chat.ChatManager chatManager;
+    private net.wrpnetwork.survivalcore.ui.ScoreboardManager scoreboardManager;
+    private net.wrpnetwork.survivalcore.mechanics.CombatManager combatManager;
 
     @Override
     public void onEnable() {
@@ -41,6 +44,7 @@ public class SurvivalCore extends JavaPlugin {
 
         this.protectionManager = new net.wrpnetwork.survivalcore.protection.ProtectionManager(this);
         this.economyManager = new net.wrpnetwork.survivalcore.economy.EconomyManager(this);
+        this.chatManager = new net.wrpnetwork.survivalcore.chat.ChatManager(this);
 
         SurvivalTabCompleter tabCompleter = new SurvivalTabCompleter(this);
         getCommand("survivalcore").setExecutor(new CommandHandler(this));
@@ -117,6 +121,28 @@ public class SurvivalCore extends JavaPlugin {
         getCommand("clan").setTabCompleter(tabCompleter);
         getServer().getPluginManager().registerEvents(new net.wrpnetwork.survivalcore.clan.ClanListener(this), this);
 
+        // Chat
+        net.wrpnetwork.survivalcore.chat.ChatCommands chatCommands = new net.wrpnetwork.survivalcore.chat.ChatCommands(this);
+        getCommand("msg").setExecutor(chatCommands);
+        getCommand("reply").setExecutor(chatCommands);
+        getCommand("clanchat").setExecutor(chatCommands);
+        getCommand("togglechat").setExecutor(chatCommands);
+        getCommand("tienda").setExecutor(ecoCommands);
+
+        // UI
+        this.scoreboardManager = new net.wrpnetwork.survivalcore.ui.ScoreboardManager(this);
+        getServer().getPluginManager().registerEvents(new net.wrpnetwork.survivalcore.ui.UIListener(this), this);
+
+        // Mechanics
+        this.combatManager = new net.wrpnetwork.survivalcore.mechanics.CombatManager(this);
+        getServer().getPluginManager().registerEvents(combatManager, this);
+        getServer().getPluginManager().registerEvents(new net.wrpnetwork.survivalcore.mechanics.ElevatorListener(this), this);
+
+        // Placeholders
+        if (getServer().getPluginManager().getPlugin("PlaceholderAPI") != null) {
+            new PlaceholderProvider(this).register();
+        }
+
         sendStartupMessage();
     }
 
@@ -186,5 +212,17 @@ public class SurvivalCore extends JavaPlugin {
 
     public net.wrpnetwork.survivalcore.clan.ClanManager getClanManager() {
         return clanManager;
+    }
+
+    public net.wrpnetwork.survivalcore.chat.ChatManager getChatManager() {
+        return chatManager;
+    }
+
+    public net.wrpnetwork.survivalcore.ui.ScoreboardManager getScoreboardManager() {
+        return scoreboardManager;
+    }
+
+    public net.wrpnetwork.survivalcore.mechanics.CombatManager getCombatManager() {
+        return combatManager;
     }
 }

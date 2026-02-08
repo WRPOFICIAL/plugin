@@ -37,6 +37,37 @@ public class CommandHandler implements CommandExecutor {
                 plugin.getProtectionManager().loadAll();
                 mm.sendMessage(sender, "<green>✔ Configuración y cachés recargadas correctamente.</green>");
                 break;
+            case "setshopitem":
+                if (!sender.hasPermission("survivalcore.admin")) {
+                    mm.sendMessage(sender, plugin.getConfig().getString("messages.no-permission"));
+                    return true;
+                }
+                if (args.length < 5) {
+                    mm.sendMessage(sender, "<red>Uso: /sc setshopitem <id> <categoria> <buy> <sell></red>");
+                    return true;
+                }
+                if (sender instanceof org.bukkit.entity.Player p) {
+                    org.bukkit.inventory.ItemStack hand = p.getInventory().getItemInMainHand();
+                    if (hand.getType().isAir()) {
+                        mm.sendMessage(sender, "<red>Debes tener un ítem en la mano.</red>");
+                        return true;
+                    }
+                    String id = args[1];
+                    String cat = args[2];
+                    double buy = Double.parseDouble(args[3]);
+                    double sell = Double.parseDouble(args[4]);
+
+                    String path = "shop.items." + id + ".";
+                    plugin.getConfig().set(path + "category", cat);
+                    plugin.getConfig().set(path + "material", hand.getType().name());
+                    plugin.getConfig().set(path + "name", hand.hasItemMeta() && hand.getItemMeta().hasDisplayName() ? net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacyAmpersand().serialize(hand.getItemMeta().displayName()) : hand.getType().name());
+                    plugin.getConfig().set(path + "buy-price", buy);
+                    plugin.getConfig().set(path + "sell-price", sell);
+                    plugin.getConfig().set(path + "slot", 10);
+                    plugin.saveConfig();
+                    mm.sendMessage(sender, "<green>✔ Ítem guardado en la tienda config.</green>");
+                }
+                break;
             case "giveupgrade":
                 if (!sender.hasPermission("survivalcore.admin")) {
                     mm.sendMessage(sender, plugin.getConfig().getString("messages.no-permission"));

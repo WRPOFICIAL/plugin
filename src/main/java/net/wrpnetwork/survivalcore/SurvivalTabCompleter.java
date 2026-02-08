@@ -32,7 +32,7 @@ public class SurvivalTabCompleter implements TabCompleter {
         switch (cmdName) {
             case "survivalcore":
                 if (args.length == 1) {
-                    completions.addAll(Arrays.asList("help", "status", "reload", "giveupgrade"));
+                    completions.addAll(Arrays.asList("help", "status", "reload", "giveupgrade", "setshopitem"));
                 } else if (args.length == 2 && args[0].equalsIgnoreCase("giveupgrade")) {
                     completions.addAll(Bukkit.getOnlinePlayers().stream().map(Player::getName).collect(Collectors.toList()));
                 }
@@ -73,7 +73,7 @@ public class SurvivalTabCompleter implements TabCompleter {
                 break;
             case "clan":
                 if (args.length == 1) {
-                    completions.addAll(Arrays.asList("create", "invite", "accept", "sethome", "home", "bank", "kick", "leave"));
+                    completions.addAll(Arrays.asList("create", "invite", "accept", "sethome", "home", "bank", "kick", "leave", "delete"));
                 } else if (args.length == 2) {
                     if (args[0].equalsIgnoreCase("invite") || args[0].equalsIgnoreCase("kick")) {
                         completions.addAll(Bukkit.getOnlinePlayers().stream().map(Player::getName).collect(Collectors.toList()));

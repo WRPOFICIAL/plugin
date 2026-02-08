@@ -30,7 +30,11 @@ public class EconomyCommands implements CommandExecutor {
                 break;
             case "shop":
             case "tienda":
-                plugin.getShopGUI().openShop(player, false); // Sell-only mode for command
+                if (!player.hasPermission("survivalcore.shop")) {
+                    plugin.getMessageManager().sendMessage(player, plugin.getConfig().getString("messages.no-permission"));
+                    return true;
+                }
+                plugin.getShopGUI().openCategories(player, false); // Sell-only mode for command
                 break;
             case "eco":
                 if (!player.hasPermission("survivalcore.admin")) return true;
