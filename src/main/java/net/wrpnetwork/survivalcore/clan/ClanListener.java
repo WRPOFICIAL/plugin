@@ -23,26 +23,4 @@ public class ClanListener implements Listener {
         plugin.getClanManager().updateNametag(event.getPlayer());
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void onChat(AsyncChatEvent event) {
-        if (!plugin.getChatManager().isGlobalChatEnabled() && !event.getPlayer().hasPermission("survivalcore.admin")) {
-            event.setCancelled(true);
-            plugin.getMessageManager().sendMessage(event.getPlayer(), "<red>El chat global está desactivado actualmente.</red>");
-            return;
-        }
-
-        DatabaseManager.ClanData clan = plugin.getDatabaseManager().getClanByMember(event.getPlayer().getUniqueId());
-
-        if (clan != null) {
-            // [TAG] Player: Message
-            String tagPrefix = "<grey>[<aqua>" + clan.tag() + "</aqua>] </grey>";
-            Component tagComp = plugin.getMessageManager().parse(tagPrefix);
-
-            event.renderer((source, sourceDisplayName, message, viewer) ->
-                tagComp.append(sourceDisplayName)
-                       .append(Component.text(": "))
-                       .append(message)
-            );
-        }
-    }
 }

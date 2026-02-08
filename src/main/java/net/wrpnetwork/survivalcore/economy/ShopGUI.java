@@ -29,7 +29,7 @@ public class ShopGUI implements Listener {
 
     public void openCategories(Player player, boolean isBuy) {
         String title = plugin.getConfig().getString("shop.category-title", "<dark_aqua>📂 Categorías de Tienda</dark_aqua>");
-        Inventory inv = Bukkit.createInventory(null, 27, plugin.getMessageManager().parse(title));
+        Inventory inv = Bukkit.createInventory(new ShopHolder(isBuy, null, true), 27, plugin.getMessageManager().parse(title));
 
         if (plugin.getConfig().getConfigurationSection("shop.categories") != null) {
             for (String key : plugin.getConfig().getConfigurationSection("shop.categories").getKeys(false)) {
@@ -53,7 +53,7 @@ public class ShopGUI implements Listener {
     public void openShop(Player player, boolean isBuy, String category) {
         String title = isBuy ? plugin.getConfig().getString("shop.title", "<dark_aqua>🛒 Tienda WRP · Compra</dark_aqua>")
                             : plugin.getConfig().getString("shop.sell-title", "<dark_green>💰 Tienda WRP · Venta</dark_green>");
-        Inventory inv = Bukkit.createInventory(null, 54, plugin.getMessageManager().parse(title));
+        Inventory inv = Bukkit.createInventory(new ShopHolder(isBuy, category, false), 54, plugin.getMessageManager().parse(title));
 
         if (plugin.getConfig().getConfigurationSection("shop.items") != null) {
             for (String key : plugin.getConfig().getConfigurationSection("shop.items").getKeys(false)) {
@@ -114,16 +114,8 @@ public class ShopGUI implements Listener {
 
     @EventHandler
     public void onClick(InventoryClickEvent event) {
-        String buyTitle = plugin.getConfig().getString("shop.title", "<dark_aqua>🛒 Tienda WRP · Compra</dark_aqua>");
-        String sellTitle = plugin.getConfig().getString("shop.sell-title", "<dark_green>💰 Tienda WRP · Venta</dark_green>");
-        String catTitle = plugin.getConfig().getString("shop.category-title", "<dark_aqua>📂 Categorías de Tienda</dark_aqua>");
-        Component viewTitle = event.getView().title();
+        if (!(event.getInventory().getHolder() instanceof ShopHolder holder)) return;
 
-        boolean isBuy = viewTitle.equals(plugin.getMessageManager().parse(buyTitle));
-        boolean isSell = viewTitle.equals(plugin.getMessageManager().parse(sellTitle));
-        boolean isCat = viewTitle.equals(plugin.getMessageManager().parse(catTitle));
-
-        if (!isBuy && !isSell && !isCat) return;
         event.setCancelled(true);
 
         if (event.getCurrentItem() == null || event.getCurrentItem().getType() == Material.AIR) return;
@@ -132,25 +124,23 @@ public class ShopGUI implements Listener {
         ItemStack item = event.getCurrentItem();
         ItemMeta meta = item.getItemMeta();
 
-        if (isCat) {
+        if (holder.isCategoryView()) {
             String category = meta.getPersistentDataContainer().get(new NamespacedKey(plugin, "category_id"), PersistentDataType.STRING);
-            Integer buyInt = meta.getPersistentDataContainer().get(new NamespacedKey(plugin, "is_buy"), PersistentDataType.INTEGER);
-            if (category != null && buyInt != null) {
-                openShop(player, buyInt == 1, category);
+            if (category != null) {
+                openShop(player, holder.isBuy(), category);
             }
             return;
         }
 
         if (meta.getPersistentDataContainer().has(new NamespacedKey(plugin, "back_to_cats"), PersistentDataType.INTEGER)) {
-            Integer buyInt = meta.getPersistentDataContainer().get(new NamespacedKey(plugin, "back_to_cats"), PersistentDataType.INTEGER);
-            openCategories(player, buyInt == 1);
+            openCategories(player, holder.isBuy());
             return;
         }
 
         Double buyPrice = meta.getPersistentDataContainer().get(new NamespacedKey(plugin, "buy_price"), PersistentDataType.DOUBLE);
         Double sellPrice = meta.getPersistentDataContainer().get(new NamespacedKey(plugin, "sell_price"), PersistentDataType.DOUBLE);
 
-        if (isBuy && event.isLeftClick() && buyPrice != null && buyPrice > 0) {
+        if (holder.isBuy() && event.isLeftClick() && buyPrice != null && buyPrice > 0) {
             if (plugin.getEconomyManager().withdraw(player.getUniqueId(), buyPrice)) {
                 ItemStack bought = new ItemStack(item.getType());
                 String special = meta.getPersistentDataContainer().get(new NamespacedKey(plugin, "special_type"), PersistentDataType.STRING);
@@ -170,7 +160,7 @@ public class ShopGUI implements Listener {
             } else {
                 plugin.getMessageManager().sendMessage(player, "<red>✖ No tienes suficiente dinero.</red>");
             }
-        } else if (isSell && event.isLeftClick() && sellPrice != null && sellPrice > 0) {
+        } else if (!holder.isBuy() && event.isLeftClick() && sellPrice != null && sellPrice > 0) {
             if (player.getInventory().contains(item.getType())) {
                 removeItem(player, item.getType(), 1);
                 plugin.getEconomyManager().addBalance(player.getUniqueId(), sellPrice);
@@ -182,15 +172,19 @@ public class ShopGUI implements Listener {
     }
 
     private void removeItem(Player player, Material mat, int amount) {
-        for (ItemStack is : player.getInventory().getContents()) {
+        int remaining = amount;
+        ItemStack[] contents = player.getInventory().getContents();
+        for (int i = 0; i < contents.length; i++) {
+            ItemStack is = contents[i];
             if (is != null && is.getType() == mat) {
-                int newAmount = is.getAmount() - amount;
-                if (newAmount > 0) {
-                    is.setAmount(newAmount);
+                if (is.getAmount() > remaining) {
+                    is.setAmount(is.getAmount() - remaining);
+                    remaining = 0;
                 } else {
-                    player.getInventory().remove(is);
+                    remaining -= is.getAmount();
+                    player.getInventory().setItem(i, null);
                 }
-                break;
+                if (remaining <= 0) break;
             }
         }
     }

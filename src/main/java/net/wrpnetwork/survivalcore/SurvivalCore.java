@@ -45,6 +45,7 @@ public class SurvivalCore extends JavaPlugin {
         this.protectionManager = new net.wrpnetwork.survivalcore.protection.ProtectionManager(this);
         this.economyManager = new net.wrpnetwork.survivalcore.economy.EconomyManager(this);
         this.chatManager = new net.wrpnetwork.survivalcore.chat.ChatManager(this);
+        getServer().getPluginManager().registerEvents(new net.wrpnetwork.survivalcore.chat.ChatListener(this), this);
 
         SurvivalTabCompleter tabCompleter = new SurvivalTabCompleter(this);
         getCommand("survivalcore").setExecutor(new CommandHandler(this));
@@ -168,6 +169,22 @@ public class SurvivalCore extends JavaPlugin {
         getLogger().info(" Licencia: Uso privado");
         getLogger().info(" Todos los derechos reservados");
         getLogger().info("════════════════════════════════");
+
+        // Save license.yml if not exists
+        java.io.File licenseFile = new java.io.File(getDataFolder(), "license.yml");
+        if (!licenseFile.exists()) {
+            try {
+                java.nio.file.Files.write(licenseFile.toPath(), java.util.Arrays.asList(
+                    "owner: \"WRP\"",
+                    "developers:",
+                    "  - \"Wyl\"",
+                    "  - \"Ari\"",
+                    "license: \"Privada\""
+                ));
+            } catch (java.io.IOException e) {
+                getLogger().warning("No se pudo crear license.yml");
+            }
+        }
     }
 
     public static SurvivalCore getInstance() {

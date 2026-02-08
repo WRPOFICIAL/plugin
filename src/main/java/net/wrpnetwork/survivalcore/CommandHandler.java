@@ -88,6 +88,13 @@ public class CommandHandler implements CommandExecutor {
             case "status":
                 sendStatus(sender);
                 break;
+            case "setup":
+                if (!sender.hasPermission("survivalcore.admin")) {
+                    mm.sendMessage(sender, plugin.getConfig().getString("messages.no-permission"));
+                    return true;
+                }
+                handleSetup(sender);
+                break;
             default:
                 sendHelp(sender);
                 break;
@@ -98,13 +105,17 @@ public class CommandHandler implements CommandExecutor {
 
     private void sendHelp(CommandSender sender) {
         mm.sendRawMessage(sender, "<blue>📘 Tus comandos:</blue>");
-        if (sender.hasPermission("survivalcore.home")) mm.sendRawMessage(sender, "<grey>-</grey> <green>/home</green>");
-        if (sender.hasPermission("survivalcore.sethome")) mm.sendRawMessage(sender, "<grey>-</grey> <green>/sethome</green>");
-        if (sender.hasPermission("survivalcore.tpa")) mm.sendRawMessage(sender, "<grey>-</grey> <green>/tpa</green>");
-        if (sender.hasPermission("survivalcore.spawn")) mm.sendRawMessage(sender, "<grey>-</grey> <green>/spawn</green>");
-        if (sender.hasPermission("survivalcore.back")) mm.sendRawMessage(sender, "<grey>-</grey> <green>/back</green>");
+        if (sender.hasPermission("survivalcore.homes")) mm.sendRawMessage(sender, "<grey>-</grey> <green>/home</green>");
+        if (sender.hasPermission("survivalcore.homes")) mm.sendRawMessage(sender, "<grey>-</grey> <green>/sethome</green>");
+        if (sender.hasPermission("survivalcore.teleport")) mm.sendRawMessage(sender, "<grey>-</grey> <green>/tpa</green>");
+        if (sender.hasPermission("survivalcore.teleport")) mm.sendRawMessage(sender, "<grey>-</grey> <green>/spawn</green>");
+        if (sender.hasPermission("survivalcore.teleport")) mm.sendRawMessage(sender, "<grey>-</grey> <green>/back</green>");
         if (sender.hasPermission("survivalcore.fly")) mm.sendRawMessage(sender, "<grey>-</grey> <green>/fly</green>");
-        if (sender.hasPermission("survivalcore.status")) mm.sendRawMessage(sender, "<grey>-</grey> <green>/sc status</green>");
+        if (sender.hasPermission("survivalcore.admin")) {
+            mm.sendRawMessage(sender, "<grey>-</grey> <green>/sc status</green>");
+            mm.sendRawMessage(sender, "<grey>-</grey> <green>/sc setup</green>");
+            mm.sendRawMessage(sender, "<grey>-</grey> <green>/sc reload</green>");
+        }
     }
 
     private void sendStatus(CommandSender sender) {
@@ -150,5 +161,22 @@ public class CommandHandler implements CommandExecutor {
         if (player.hasPermission("survivalcore.rank.staff")) return "<aqua>Staff</aqua>";
         if (player.hasPermission("survivalcore.rank.vip")) return "<gold>VIP</gold>";
         return "<white>Usuario</white>";
+    }
+
+    private void handleSetup(CommandSender sender) {
+        mm.sendMessage(sender, "<yellow>⌛ Iniciando configuración automática de dependencias...</yellow>");
+
+        if (org.bukkit.Bukkit.getPluginManager().getPlugin("PlaceholderAPI") == null) {
+            mm.sendMessage(sender, "<red>✖ PlaceholderAPI no encontrado. Instálalo manualmente.</red>");
+            return;
+        }
+
+        String[] expansions = {"Player", "Server", "Vault", "Statistic"};
+        for (String exp : expansions) {
+            org.bukkit.Bukkit.dispatchCommand(org.bukkit.Bukkit.getConsoleSender(), "papi ecloud download " + exp);
+        }
+        org.bukkit.Bukkit.dispatchCommand(org.bukkit.Bukkit.getConsoleSender(), "papi reload");
+
+        mm.sendMessage(sender, "<green>✔ Expansiones de PAPI solicitadas y recargadas.</green>");
     }
 }

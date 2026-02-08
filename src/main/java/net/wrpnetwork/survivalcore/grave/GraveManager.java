@@ -36,9 +36,10 @@ public class GraveManager {
             ItemStack[] items = net.wrpnetwork.survivalcore.util.InventoryUtils.itemStackArrayFromBase64(d.itemsBase64());
 
             // Recreate hologram
-            ArmorStand hologram = (ArmorStand) loc.getWorld().spawnEntity(loc.clone().add(0.5, -0.5, 0.5), EntityType.ARMOR_STAND);
+            ArmorStand hologram = (ArmorStand) loc.getWorld().spawnEntity(loc.clone().add(0.5, 0.0, 0.5), EntityType.ARMOR_STAND);
             hologram.setVisible(false);
             hologram.setGravity(false);
+            hologram.setMarker(true);
             hologram.setCustomNameVisible(true);
             String ownerName = Bukkit.getOfflinePlayer(d.owner()).getName();
             if (ownerName == null) ownerName = "Jugador";
@@ -82,9 +83,10 @@ public class GraveManager {
         }
 
         // Create Hologram
-        ArmorStand hologram = (ArmorStand) loc.getWorld().spawnEntity(loc.clone().add(0.5, -0.5, 0.5), EntityType.ARMOR_STAND);
+        ArmorStand hologram = (ArmorStand) loc.getWorld().spawnEntity(loc.clone().add(0.5, 0.0, 0.5), EntityType.ARMOR_STAND);
         hologram.setVisible(false);
         hologram.setGravity(false);
+        hologram.setMarker(true);
         hologram.setCustomNameVisible(true);
         String holoText = plugin.getConfig().getString("messages.grave-hologram", "<red>☠ Tumba de <player></red>")
                 .replace("<player>", player.getName());
@@ -122,13 +124,14 @@ public class GraveManager {
     }
 
     public void removeGrave(Location loc, boolean dropItems) {
-        Grave grave = activeGraves.remove(loc);
+        Location normalized = loc.getBlock().getLocation();
+        Grave grave = activeGraves.remove(normalized);
         if (grave == null) return;
 
         // Remove from DB
-        plugin.getDatabaseManager().deleteGrave(loc);
+        plugin.getDatabaseManager().deleteGrave(normalized);
 
-        loc.getBlock().setType(Material.AIR);
+        normalized.getBlock().setType(Material.AIR);
         if (grave.hologram() != null) {
             grave.hologram().remove();
         }
@@ -143,7 +146,7 @@ public class GraveManager {
     }
 
     public Grave getGrave(Location loc) {
-        return activeGraves.get(loc);
+        return activeGraves.get(loc.getBlock().getLocation());
     }
 
     public boolean isGraveBlock(Block block) {

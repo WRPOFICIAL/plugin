@@ -74,16 +74,16 @@ graves:
 # MENSAJES Y TRADUCCIONES
 # ══════════════════════════════════════════════════════════════════════════
 messages:
-  prefix: "<dark_grey>┃ <gradient:#55ff55:#aaffaa><b>SurvivalCore+</b></gradient> <dark_grey>»</dark_grey> "
-  teleport-start: "<yellow>⌛ Teletransportando en <count> segundos...</yellow>"
-  teleport-success: "<green>✔ Teletransportado con éxito.</green>"
-  teleport-cancelled-move: "<red>✖ Teletransporte cancelado por movimiento.</red>"
-  teleport-cancelled-damage: "<red>✖ Teletransporte cancelado por daño.</red>"
-  home-saved: "<green>✔ Hogar guardado correctamente.</green>"
-  home-deleted: "<green>✔ Hogar eliminado correctamente.</green>"
-  no-permission: "<red>✖ No tienes permiso.</red>"
-  grave-created: "<red>☠ Tumba creada en tu posición de muerte.</red>"
-  grave-hologram: "<red>☠ Tumba de <player></red>"
+  prefix: "&8[&aSurvival&8] &7"
+  teleport-start: "&e⏳ Teletransportando en &f<count> &esegundos…"
+  teleport-success: "&a✔ Teletransportado con éxito."
+  teleport-cancelled-move: "&c✖ Teletransporte cancelado por movimiento."
+  teleport-cancelled-damage: "&c✖ Teletransporte cancelado por daño."
+  home-saved: "&a✔ Hogar guardado correctamente"
+  home-deleted: "&a✔ Hogar eliminado correctamente"
+  no-permission: "&c✖ No tienes permiso"
+  grave-created: "&c☠ Tumba creada en tu posición de muerte"
+  grave-hologram: "&c☠ Tumba de &f<player>"
 
 silent-mode: false
 

@@ -23,6 +23,13 @@ public class TeleportManager {
     }
 
     public void teleport(Player player, Location location) {
+        if (plugin.getConfig().getBoolean("teleport.combat-block", true) &&
+            plugin.getCombatManager() != null &&
+            plugin.getCombatManager().isTagged(player)) {
+            plugin.getMessageManager().sendMessage(player, "<red>✖ No puedes teletransportarte mientras estás en combate.</red>");
+            return;
+        }
+
         int delay = plugin.getConfig().getInt("teleport.delay", 3);
 
         if (delay <= 0 || player.hasPermission("survivalcore.teleport.bypass")) {

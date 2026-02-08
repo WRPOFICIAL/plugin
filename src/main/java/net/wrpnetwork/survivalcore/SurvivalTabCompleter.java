@@ -61,6 +61,31 @@ public class SurvivalTabCompleter implements TabCompleter {
                     completions.addAll(plugin.getDatabaseManager().getHomes(player.getUniqueId()));
                 }
                 break;
+            case "money":
+            case "balance":
+                if (args.length == 1 && player.hasPermission("survivalcore.admin")) {
+                    completions.addAll(Bukkit.getOnlinePlayers().stream().map(Player::getName).collect(Collectors.toList()));
+                }
+                break;
+            case "eco":
+                if (player.hasPermission("survivalcore.admin")) {
+                    if (args.length == 1) {
+                        completions.addAll(Arrays.asList("give", "set", "reset"));
+                    } else if (args.length == 2) {
+                        completions.addAll(Bukkit.getOnlinePlayers().stream().map(Player::getName).collect(Collectors.toList()));
+                    }
+                }
+                break;
+            case "msg":
+                if (args.length == 1) {
+                    completions.addAll(Bukkit.getOnlinePlayers().stream().map(Player::getName).collect(Collectors.toList()));
+                }
+                break;
+            case "tumba":
+                if (args.length == 1 && player.hasPermission("survivalcore.admin")) {
+                    completions.addAll(Bukkit.getOnlinePlayers().stream().map(Player::getName).collect(Collectors.toList()));
+                }
+                break;
             case "fly":
             case "buildmode":
             case "repair":

@@ -78,7 +78,7 @@ public class HomeCommands implements CommandExecutor {
 
         plugin.getDatabaseManager().saveHome(player.getUniqueId(), name, player.getLocation(), currentLevel);
         plugin.getProtectionManager().updateHome(player.getUniqueId(), name, player.getLocation(), currentLevel);
-        plugin.getMessageManager().sendMessage(player, plugin.getConfig().getString("messages.home-saved", "<green>✔ Hogar guardado correctamente. ¡Se ha colocado un núcleo de nivel " + currentLevel + "!</green>"));
+        plugin.getMessageManager().sendMessage(player, plugin.getConfig().getString("messages.home-saved", "&a✔ Hogar guardado correctamente"));
     }
 
     private void handleHome(Player player, String[] args) {
