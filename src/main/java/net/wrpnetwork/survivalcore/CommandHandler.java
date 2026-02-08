@@ -34,7 +34,25 @@ public class CommandHandler implements CommandExecutor {
                     return true;
                 }
                 plugin.reloadConfig();
-                mm.sendMessage(sender, "<green>✔ Configuración recargada.</green>");
+                plugin.getProtectionManager().loadAll();
+                mm.sendMessage(sender, "<green>✔ Configuración y cachés recargadas correctamente.</green>");
+                break;
+            case "giveupgrade":
+                if (!sender.hasPermission("survivalcore.admin")) {
+                    mm.sendMessage(sender, plugin.getConfig().getString("messages.no-permission"));
+                    return true;
+                }
+                if (args.length < 2) {
+                    mm.sendMessage(sender, "<red>Uso: /sc giveupgrade <jugador></red>");
+                    return true;
+                }
+                org.bukkit.entity.Player target = org.bukkit.Bukkit.getPlayer(args[1]);
+                if (target == null) {
+                    mm.sendMessage(sender, "<red>Jugador no encontrado.</red>");
+                    return true;
+                }
+                target.getInventory().addItem(getUpgradeItem());
+                mm.sendMessage(sender, "<green>✔ Ítem de mejora entregado a " + target.getName() + ".</green>");
                 break;
             case "status":
                 sendStatus(sender);
@@ -79,6 +97,21 @@ public class CommandHandler implements CommandExecutor {
         if (plugin.getConfig().getBoolean("modules.graves", true)) sb.append("<green>Graves</green> ");
         if (plugin.getConfig().getBoolean("modules.build", true)) sb.append("<green>Build</green> ");
         return sb.toString().trim();
+    }
+
+    private org.bukkit.inventory.ItemStack getUpgradeItem() {
+        org.bukkit.Material mat = org.bukkit.Material.valueOf(plugin.getConfig().getString("homes.upgrade-item.material", "NETHER_STAR"));
+        org.bukkit.inventory.ItemStack item = new org.bukkit.inventory.ItemStack(mat);
+        org.bukkit.inventory.meta.ItemMeta meta = item.getItemMeta();
+        meta.displayName(plugin.getMessageManager().parse(plugin.getConfig().getString("homes.upgrade-item.name", "<gold>✨ Núcleo de Mejora ✨</gold>")));
+        java.util.List<net.kyori.adventure.text.Component> lore = new java.util.ArrayList<>();
+        for (String line : plugin.getConfig().getStringList("homes.upgrade-item.lore")) {
+            lore.add(plugin.getMessageManager().parse(line));
+        }
+        meta.lore(lore);
+        meta.getPersistentDataContainer().set(new org.bukkit.NamespacedKey(plugin, "home_upgrade"), org.bukkit.persistence.PersistentDataType.INTEGER, 1);
+        item.setItemMeta(meta);
+        return item;
     }
 
     private String getPlayerRank(Player player) {

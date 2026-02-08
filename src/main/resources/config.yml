@@ -1,6 +1,11 @@
-# SurvivalCore+ Config
-# Desarrollado por WRP (Wyl & Ari)
+# ══════════════════════════════════════════════════════════════════════════
+# SURVIVALCORE+ CONFIGURATION (WRP NETWORK)
+# ══════════════════════════════════════════════════════════════════════════
+# Desarrollado por Wyl & Ari.
+# Licencia Privada - Uso exclusivo.
+# ══════════════════════════════════════════════════════════════════════════
 
+# Activa o desactiva los módulos principales del plugin.
 modules:
   teleport: true
   homes: true
@@ -14,12 +19,38 @@ teleport:
   cancel-on-damage: true
   combat-block: true # Bloqueo si está en combate (Requiere integración opcional o cooldown interno)
 
+# ══════════════════════════════════════════════════════════════════════════
+# SISTEMA DE HOGARES Y PROTECCIÓN
+# ══════════════════════════════════════════════════════════════════════════
 homes:
+  # Límite de hogares para usuarios sin permisos especiales.
   default-limit: 1
-  # Límites por permiso: survivalcore.homes.<rango>
+
+  # Límites personalizados por permisos. Ej: survivalcore.homes.vip
   limits:
     vip: 3
     staff: 100
+
+  # Radios de protección (en bloques) según el nivel del hogar.
+  radii:
+    level-1: 10
+    level-2: 20
+    level-3: 30
+
+  # Los bloques que aparecerán físicamente en el centro de la protección.
+  # Representan visualmente el nivel actual del hogar.
+  core-blocks:
+    level-1: COPPER_BLOCK
+    level-2: IRON_BLOCK
+    level-3: GOLD_BLOCK
+
+  # Configuración del objeto físico necesario para subir de nivel una zona.
+  upgrade-item:
+    material: NETHER_STAR
+    name: "<gold>✨ Núcleo de Mejora de Hogar ✨</gold>"
+    lore:
+      - "<grey>Usa este núcleo en tu zona para subir de nivel.</grey>"
+      - "<yellow>¡Aumenta tu radio de protección!</yellow>"
 
 graves:
   use-player-head: true
@@ -27,9 +58,12 @@ graves:
   particles: true
   give-compass: true
 
+# ══════════════════════════════════════════════════════════════════════════
+# MENSAJES Y TRADUCCIONES
+# ══════════════════════════════════════════════════════════════════════════
 messages:
-  prefix: "<grey>[<green>Survival</green>]</grey> "
-  teleport-start: "<yellow>Teletransportando en <count> segundos...</yellow>"
+  prefix: "<dark_grey>┃ <gradient:#55ff55:#aaffaa><b>SurvivalCore+</b></gradient> <dark_grey>»</dark_grey> "
+  teleport-start: "<yellow>⌛ Teletransportando en <count> segundos...</yellow>"
   teleport-success: "<green>✔ Teletransportado con éxito.</green>"
   teleport-cancelled-move: "<red>✖ Teletransporte cancelado por movimiento.</red>"
   teleport-cancelled-damage: "<red>✖ Teletransporte cancelado por daño.</red>"
@@ -72,8 +106,19 @@ clans:
   # Permite teletransporte grupal coordinado.
   clan-home-enabled: true
 
+# ══════════════════════════════════════════════════════════════════════════
+# SISTEMA DE TIENDA Y ECONOMÍA (WRP · SHOP)
+# ══════════════════════════════════════════════════════════════════════════
+# La tienda se divide en COMPRA (vía NPCs) y VENTA (vía comando /tienda).
 shop:
-  title: "<dark_aqua>Tienda SurvivalCore+</dark_aqua>"
+  title: "<dark_aqua>🛒 Tienda WRP · Compra</dark_aqua>"
+  sell-title: "<dark_green>💰 Tienda WRP · Venta</dark_green>"
+
+  # Lista de ítems disponibles.
+  # material: Material de Minecraft (MAYÚSCULAS).
+  # buy-price: Precio de compra al NPC (0 para desactivar compra).
+  # sell-price: Precio de venta al servidor (0 para desactivar venta).
+  # special: 'upgrade_core' para el ítem de mejora, dejar vacío para ítems normales.
   items:
     diamond:
       material: DIAMOND

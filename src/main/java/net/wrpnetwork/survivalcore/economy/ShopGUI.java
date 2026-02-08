@@ -27,8 +27,9 @@ public class ShopGUI implements Listener {
         this.itemKey = new NamespacedKey(plugin, "shop_item_id");
     }
 
-    public void openShop(Player player) {
-        String title = plugin.getConfig().getString("shop.title", "<dark_aqua>Tienda SurvivalCore+</dark_aqua>");
+    public void openShop(Player player, boolean isBuy) {
+        String title = isBuy ? plugin.getConfig().getString("shop.title", "<dark_aqua>🛒 Tienda WRP · Compra</dark_aqua>")
+                            : plugin.getConfig().getString("shop.sell-title", "<dark_green>💰 Tienda WRP · Venta</dark_green>");
         Inventory inv = Bukkit.createInventory(null, 27, plugin.getMessageManager().parse(title));
 
         if (plugin.getConfig().getConfigurationSection("shop.items") != null) {
@@ -36,27 +37,34 @@ public class ShopGUI implements Listener {
                 String path = "shop.items." + key + ".";
                 Material mat = Material.valueOf(plugin.getConfig().getString(path + "material"));
                 String name = plugin.getConfig().getString(path + "name");
-                double buy = plugin.getConfig().getDouble(path + "buy-price");
-                double sell = plugin.getConfig().getDouble(path + "sell-price");
+                double buy = isBuy ? plugin.getConfig().getDouble(path + "buy-price") : 0;
+                double sell = !isBuy ? plugin.getConfig().getDouble(path + "sell-price") : 0;
                 int slot = plugin.getConfig().getInt(path + "slot");
                 String special = plugin.getConfig().getString(path + "special", "");
 
-                addItem(inv, slot, mat, name, buy, sell, special);
+                if (isBuy && buy <= 0) continue;
+                if (!isBuy && sell <= 0) continue;
+
+                addItem(inv, slot, mat, name, buy, sell, special, isBuy);
             }
         }
 
         player.openInventory(inv);
     }
 
-    private void addItem(Inventory inv, int slot, Material mat, String name, double buyPrice, double sellPrice, String special) {
+    private void addItem(Inventory inv, int slot, Material mat, String name, double buyPrice, double sellPrice, String special, boolean isBuy) {
         ItemStack item = new ItemStack(mat);
         ItemMeta meta = item.getItemMeta();
         meta.displayName(plugin.getMessageManager().parse(name));
         List<Component> lore = new ArrayList<>();
-        if (buyPrice > 0) lore.add(plugin.getMessageManager().parse("<grey>Precio Compra: <green>$" + buyPrice + "</green></grey>"));
-        if (sellPrice > 0) lore.add(plugin.getMessageManager().parse("<grey>Precio Venta: <red>$" + sellPrice + "</red></grey>"));
-        lore.add(plugin.getMessageManager().parse("<yellow>Clic Izquierdo para Comprar</yellow>"));
-        if (sellPrice > 0) lore.add(plugin.getMessageManager().parse("<yellow>Clic Derecho para Vender</yellow>"));
+        if (buyPrice > 0) {
+            lore.add(plugin.getMessageManager().parse("<grey>Precio Compra: <green>$" + buyPrice + "</green></grey>"));
+            lore.add(plugin.getMessageManager().parse("<yellow>Clic Izquierdo para Comprar</yellow>"));
+        }
+        if (sellPrice > 0) {
+            lore.add(plugin.getMessageManager().parse("<grey>Precio Venta: <red>$" + sellPrice + "</red></grey>"));
+            lore.add(plugin.getMessageManager().parse("<yellow>Clic Izquierdo para Vender</yellow>"));
+        }
         meta.lore(lore);
 
         // Tag for price info
@@ -72,8 +80,14 @@ public class ShopGUI implements Listener {
 
     @EventHandler
     public void onClick(InventoryClickEvent event) {
-        String title = plugin.getConfig().getString("shop.title", "<dark_aqua>Tienda SurvivalCore+</dark_aqua>");
-        if (!event.getView().title().equals(plugin.getMessageManager().parse(title))) return;
+        String buyTitle = plugin.getConfig().getString("shop.title", "<dark_aqua>🛒 Tienda WRP · Compra</dark_aqua>");
+        String sellTitle = plugin.getConfig().getString("shop.sell-title", "<dark_green>💰 Tienda WRP · Venta</dark_green>");
+        Component viewTitle = event.getView().title();
+
+        boolean isBuy = viewTitle.equals(plugin.getMessageManager().parse(buyTitle));
+        boolean isSell = viewTitle.equals(plugin.getMessageManager().parse(sellTitle));
+
+        if (!isBuy && !isSell) return;
         event.setCancelled(true);
 
         if (event.getCurrentItem() == null || event.getCurrentItem().getType() == Material.AIR) return;
@@ -85,7 +99,7 @@ public class ShopGUI implements Listener {
         Double buyPrice = meta.getPersistentDataContainer().get(new NamespacedKey(plugin, "buy_price"), PersistentDataType.DOUBLE);
         Double sellPrice = meta.getPersistentDataContainer().get(new NamespacedKey(plugin, "sell_price"), PersistentDataType.DOUBLE);
 
-        if (event.isLeftClick() && buyPrice != null && buyPrice > 0) {
+        if (isBuy && event.isLeftClick() && buyPrice != null && buyPrice > 0) {
             if (plugin.getEconomyManager().withdraw(player.getUniqueId(), buyPrice)) {
                 ItemStack bought = new ItemStack(item.getType());
                 String special = meta.getPersistentDataContainer().get(new NamespacedKey(plugin, "special_type"), PersistentDataType.STRING);
@@ -105,7 +119,7 @@ public class ShopGUI implements Listener {
             } else {
                 plugin.getMessageManager().sendMessage(player, "<red>✖ No tienes suficiente dinero.</red>");
             }
-        } else if (event.isRightClick() && sellPrice != null && sellPrice > 0) {
+        } else if (isSell && event.isLeftClick() && sellPrice != null && sellPrice > 0) {
             if (player.getInventory().contains(item.getType())) {
                 removeItem(player, item.getType(), 1);
                 plugin.getEconomyManager().addBalance(player.getUniqueId(), sellPrice);

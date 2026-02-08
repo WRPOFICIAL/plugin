@@ -3,6 +3,7 @@ package net.wrpnetwork.survivalcore.home;
 import net.wrpnetwork.survivalcore.SurvivalCore;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -71,9 +72,13 @@ public class HomeCommands implements CommandExecutor {
             }
         }
 
+        // Place core block
+        Material coreMat = Material.valueOf(plugin.getConfig().getString("homes.core-blocks.level-" + currentLevel, "COPPER_BLOCK"));
+        player.getLocation().getBlock().setType(coreMat);
+
         plugin.getDatabaseManager().saveHome(player.getUniqueId(), name, player.getLocation(), currentLevel);
         plugin.getProtectionManager().updateHome(player.getUniqueId(), name, player.getLocation(), currentLevel);
-        plugin.getMessageManager().sendMessage(player, plugin.getConfig().getString("messages.home-saved", "<green>✔ Hogar guardado correctamente.</green>"));
+        plugin.getMessageManager().sendMessage(player, plugin.getConfig().getString("messages.home-saved", "<green>✔ Hogar guardado correctamente. ¡Se ha colocado un núcleo de nivel " + currentLevel + "!</green>"));
     }
 
     private void handleHome(Player player, String[] args) {

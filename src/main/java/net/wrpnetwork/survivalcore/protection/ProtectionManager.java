@@ -58,12 +58,16 @@ public class ProtectionManager {
         trustCache.put(key, plugin.getDatabaseManager().getTrusted(owner, homeName));
     }
 
+    public List<DatabaseManager.HomeData> getWorldHomes(String world) {
+        return worldHomeCache.get(world);
+    }
+
     public boolean canBuildAt(UUID playerUuid, Location loc) {
         List<DatabaseManager.HomeData> homes = worldHomeCache.get(loc.getWorld().getName());
         if (homes == null) return true;
 
         for (DatabaseManager.HomeData home : homes) {
-            int radius = home.level() * 10;
+            int radius = plugin.getConfig().getInt("homes.radii.level-" + home.level(), home.level() * 10);
             double distanceSq = Math.pow(loc.getX() - home.x(), 2) + Math.pow(loc.getZ() - home.z(), 2);
             if (distanceSq <= Math.pow(radius, 2)) {
                 if (home.owner().equals(playerUuid)) return true;
@@ -82,7 +86,7 @@ public class ProtectionManager {
         if (homes == null) return false;
 
         for (DatabaseManager.HomeData home : homes) {
-            int radius = home.level() * 10;
+            int radius = plugin.getConfig().getInt("homes.radii.level-" + home.level(), home.level() * 10);
             double distanceSq = Math.pow(loc.getX() - home.x(), 2) + Math.pow(loc.getZ() - home.z(), 2);
             if (distanceSq <= Math.pow(radius, 2)) return true;
         }

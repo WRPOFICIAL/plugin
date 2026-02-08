@@ -32,7 +32,9 @@ public class SurvivalTabCompleter implements TabCompleter {
         switch (cmdName) {
             case "survivalcore":
                 if (args.length == 1) {
-                    completions.addAll(Arrays.asList("help", "status", "reload"));
+                    completions.addAll(Arrays.asList("help", "status", "reload", "giveupgrade"));
+                } else if (args.length == 2 && args[0].equalsIgnoreCase("giveupgrade")) {
+                    completions.addAll(Bukkit.getOnlinePlayers().stream().map(Player::getName).collect(Collectors.toList()));
                 }
                 break;
             case "tpa":

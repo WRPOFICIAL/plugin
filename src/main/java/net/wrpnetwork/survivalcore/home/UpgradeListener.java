@@ -63,6 +63,11 @@ public class UpgradeListener implements Listener {
         }
 
         int nextLevel = currentInfo.level() + 1;
+
+        // Update core block
+        org.bukkit.Material nextMat = org.bukkit.Material.valueOf(plugin.getConfig().getString("homes.core-blocks.level-" + nextLevel, "IRON_BLOCK"));
+        currentInfo.location().getBlock().setType(nextMat);
+
         plugin.getDatabaseManager().saveHome(player.getUniqueId(), currentHome, currentInfo.location(), nextLevel);
         plugin.getProtectionManager().updateHome(player.getUniqueId(), currentHome, currentInfo.location(), nextLevel);
 

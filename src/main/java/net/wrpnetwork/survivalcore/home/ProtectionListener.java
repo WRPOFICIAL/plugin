@@ -26,10 +26,29 @@ public class ProtectionListener implements Listener {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onBreak(BlockBreakEvent event) {
-        if (isProtected(event.getPlayer(), event.getBlock().getLocation())) {
+        Location loc = event.getBlock().getLocation();
+        if (isCoreBlock(loc)) {
+            event.setCancelled(true);
+            plugin.getMessageManager().sendMessage(event.getPlayer(), "<red>✖ No puedes romper el Núcleo del Hogar. Usa /delhome si quieres quitarlo.</red>");
+            return;
+        }
+
+        if (isProtected(event.getPlayer(), loc)) {
             event.setCancelled(true);
             plugin.getMessageManager().sendActionBar(event.getPlayer(), "<red>✖ Esta zona está protegida.</red>");
         }
+    }
+
+    private boolean isCoreBlock(Location loc) {
+        // Check if this location is a home location
+        List<net.wrpnetwork.survivalcore.database.DatabaseManager.HomeData> homes = plugin.getProtectionManager().getWorldHomes(loc.getWorld().getName());
+        if (homes == null) return false;
+        for (net.wrpnetwork.survivalcore.database.DatabaseManager.HomeData home : homes) {
+            if (home.x() == loc.getBlockX() && home.y() == loc.getBlockY() && home.z() == loc.getBlockZ()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @EventHandler(priority = EventPriority.LOWEST)

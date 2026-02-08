@@ -29,7 +29,8 @@ public class EconomyCommands implements CommandExecutor {
                 plugin.getEconomyManager().sendBalanceMessage(player);
                 break;
             case "shop":
-                new ShopGUI(plugin).openShop(player); // Use the one from SurvivalCore ideally
+            case "tienda":
+                plugin.getShopGUI().openShop(player, false); // Sell-only mode for command
                 break;
             case "eco":
                 if (!player.hasPermission("survivalcore.admin")) return true;

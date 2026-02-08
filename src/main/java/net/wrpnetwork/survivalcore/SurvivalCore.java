@@ -176,6 +176,10 @@ public class SurvivalCore extends JavaPlugin {
         return economyManager;
     }
 
+    public net.wrpnetwork.survivalcore.economy.ShopGUI getShopGUI() {
+        return shopGUI;
+    }
+
     public net.wrpnetwork.survivalcore.protection.ProtectionManager getProtectionManager() {
         return protectionManager;
     }
