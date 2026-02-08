@@ -21,6 +21,7 @@ public class SurvivalCore extends JavaPlugin {
     private net.wrpnetwork.survivalcore.economy.ShopGUI shopGUI;
     private net.wrpnetwork.survivalcore.economy.NPCManager npcManager;
     private net.wrpnetwork.survivalcore.protection.ProtectionManager protectionManager;
+    private net.wrpnetwork.survivalcore.clan.ClanManager clanManager;
 
     @Override
     public void onEnable() {
@@ -110,6 +111,12 @@ public class SurvivalCore extends JavaPlugin {
         getServer().getPluginManager().registerEvents(shopGUI, this);
         getServer().getPluginManager().registerEvents(npcManager, this);
 
+        // Clans
+        this.clanManager = new net.wrpnetwork.survivalcore.clan.ClanManager(this);
+        getCommand("clan").setExecutor(new net.wrpnetwork.survivalcore.clan.ClanCommands(this));
+        getCommand("clan").setTabCompleter(tabCompleter);
+        getServer().getPluginManager().registerEvents(new net.wrpnetwork.survivalcore.clan.ClanListener(this), this);
+
         sendStartupMessage();
     }
 
@@ -171,5 +178,9 @@ public class SurvivalCore extends JavaPlugin {
 
     public net.wrpnetwork.survivalcore.protection.ProtectionManager getProtectionManager() {
         return protectionManager;
+    }
+
+    public net.wrpnetwork.survivalcore.clan.ClanManager getClanManager() {
+        return clanManager;
     }
 }

@@ -9,6 +9,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.sql.Types;
 
 public class DatabaseManager {
 
@@ -84,6 +85,28 @@ public class DatabaseManager {
                     "home_name TEXT, " +
                     "trusted_uuid TEXT, " +
                     "PRIMARY KEY (owner_uuid, home_name, trusted_uuid))");
+
+            // Clans table
+            statement.execute("CREATE TABLE IF NOT EXISTS clans (" +
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                    "name TEXT UNIQUE, " +
+                    "tag TEXT, " +
+                    "leader_uuid TEXT, " +
+                    "balance REAL DEFAULT 0, " +
+                    "level INTEGER DEFAULT 1, " +
+                    "world TEXT, " +
+                    "x REAL, " +
+                    "y REAL, " +
+                    "z REAL, " +
+                    "yaw REAL, " +
+                    "pitch REAL)");
+
+            // Clan members table
+            statement.execute("CREATE TABLE IF NOT EXISTS clan_members (" +
+                    "uuid TEXT PRIMARY KEY, " +
+                    "clan_id INTEGER, " +
+                    "rank TEXT, " +
+                    "FOREIGN KEY(clan_id) REFERENCES clans(id) ON DELETE CASCADE)");
         }
     }
 
@@ -371,6 +394,141 @@ public class DatabaseManager {
         }
         return false;
     }
+
+    public int createClan(String name, String tag, UUID leader) {
+        try (PreparedStatement ps = connection.prepareStatement(
+                "INSERT INTO clans (name, tag, leader_uuid) VALUES (?, ?, ?)", Statement.RETURN_GENERATED_KEYS)) {
+            ps.setString(1, name);
+            ps.setString(2, tag);
+            ps.setString(3, leader.toString());
+            ps.executeUpdate();
+            ResultSet rs = ps.getGeneratedKeys();
+            if (rs.next()) return rs.getInt(1);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return -1;
+    }
+
+    public void deleteClan(int clanId) {
+        try (PreparedStatement ps = connection.prepareStatement("DELETE FROM clans WHERE id = ?")) {
+            ps.setInt(1, clanId);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public ClanData getClan(String name) {
+        try (PreparedStatement ps = connection.prepareStatement("SELECT * FROM clans WHERE name = ?")) {
+            ps.setString(1, name);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) return mapClanData(rs);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public ClanData getClanByMember(UUID uuid) {
+        try (PreparedStatement ps = connection.prepareStatement(
+                "SELECT c.* FROM clans c JOIN clan_members m ON c.id = m.clan_id WHERE m.uuid = ?")) {
+            ps.setString(1, uuid.toString());
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) return mapClanData(rs);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public void addClanMember(UUID uuid, int clanId, String rank) {
+        try (PreparedStatement ps = connection.prepareStatement(
+                "INSERT OR REPLACE INTO clan_members (uuid, clan_id, rank) VALUES (?, ?, ?)")) {
+            ps.setString(1, uuid.toString());
+            ps.setInt(2, clanId);
+            ps.setString(3, rank);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void removeClanMember(UUID uuid) {
+        try (PreparedStatement ps = connection.prepareStatement("DELETE FROM clan_members WHERE uuid = ?")) {
+            ps.setString(1, uuid.toString());
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void updateClan(int id, double balance, int level, Location home) {
+        try (PreparedStatement ps = connection.prepareStatement(
+                "UPDATE clans SET balance = ?, level = ?, world = ?, x = ?, y = ?, z = ?, yaw = ?, pitch = ? WHERE id = ?")) {
+            ps.setDouble(1, balance);
+            ps.setInt(2, level);
+            if (home != null) {
+                ps.setString(3, home.getWorld().getName());
+                ps.setDouble(4, home.getX());
+                ps.setDouble(5, home.getY());
+                ps.setDouble(6, home.getZ());
+                ps.setFloat(7, home.getYaw());
+                ps.setFloat(8, home.getPitch());
+            } else {
+                ps.setNull(3, Types.VARCHAR);
+                ps.setNull(4, Types.DOUBLE);
+                ps.setNull(5, Types.DOUBLE);
+                ps.setNull(6, Types.DOUBLE);
+                ps.setNull(7, Types.FLOAT);
+                ps.setNull(8, Types.FLOAT);
+            }
+            ps.setInt(9, id);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public List<ClanMemberData> getClanMembers(int clanId) {
+        List<ClanMemberData> members = new ArrayList<>();
+        try (PreparedStatement ps = connection.prepareStatement("SELECT * FROM clan_members WHERE clan_id = ?")) {
+            ps.setInt(1, clanId);
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+                members.add(new ClanMemberData(UUID.fromString(rs.getString("uuid")), clanId, rs.getString("rank")));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return members;
+    }
+
+    private ClanData mapClanData(ResultSet rs) throws SQLException {
+        Location home = null;
+        if (rs.getString("world") != null) {
+            home = new Location(
+                    Bukkit.getWorld(rs.getString("world")),
+                    rs.getDouble("x"),
+                    rs.getDouble("y"),
+                    rs.getDouble("z"),
+                    rs.getFloat("yaw"),
+                    rs.getFloat("pitch")
+            );
+        }
+        return new ClanData(
+                rs.getInt("id"),
+                rs.getString("name"),
+                rs.getString("tag"),
+                UUID.fromString(rs.getString("leader_uuid")),
+                rs.getDouble("balance"),
+                rs.getInt("level"),
+                home
+        );
+    }
+
+    public record ClanData(int id, String name, String tag, UUID leader, double balance, int level, Location home) {}
+    public record ClanMemberData(UUID uuid, int clanId, String rank) {}
 
     public record GraveData(UUID owner, String world, int x, int y, int z, String itemsBase64, long createdAt) {}
 

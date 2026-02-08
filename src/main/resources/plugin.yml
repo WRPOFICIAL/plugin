@@ -45,3 +45,5 @@ commands:
     description: Administrar economía
   spawnnpc:
     description: Spawnear un NPC de tienda
+  clan:
+    description: Comandos de clan

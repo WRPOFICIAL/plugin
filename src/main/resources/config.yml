@@ -41,6 +41,37 @@ messages:
 
 silent-mode: false
 
+# ══════════════════════════════════════════════════════════════════════════
+# CONFIGURACIÓN DEL SISTEMA DE CLANES (WRP · CLANS)
+# ══════════════════════════════════════════════════════════════════════════
+# El sistema de clanes permite a los jugadores crear comunidades privadas,
+# tener un hogar compartido y gestionar una economía grupal.
+#
+# INSTRUCCIONES DE USO:
+# - /clan create <nombre> <lema>: Crea un nuevo clan con un tag único.
+# - /clan invite <jugador>: Envía una invitación para unirse.
+# - /clan bank: Gestiona el dinero del grupo.
+# ══════════════════════════════════════════════════════════════════════════
+
+clans:
+  enabled: true
+
+  # chat-format: Define cómo se verá el tag del clan en el chat.
+  # Soporta MiniMessage (Hex/Gradients).
+  chat-format: "<grey>[<aqua>%tag%</aqua>] </grey>%player%: %message%"
+
+  # Límites de caracteres para mantener el chat limpio y profesional.
+  max-name-length: 16
+  max-tag-length: 5
+
+  # Configuración de Rangos Internos:
+  # LEADER: Control total del clan y el banco.
+  # MEMBER: Puede usar el hogar del clan y depositar dinero.
+
+  # Sistema de Hogares de Clan:
+  # Permite teletransporte grupal coordinado.
+  clan-home-enabled: true
+
 shop:
   title: "<dark_aqua>Tienda SurvivalCore+</dark_aqua>"
   items:

@@ -69,6 +69,17 @@ public class SurvivalTabCompleter implements TabCompleter {
                             .collect(Collectors.toList()));
                 }
                 break;
+            case "clan":
+                if (args.length == 1) {
+                    completions.addAll(Arrays.asList("create", "invite", "accept", "sethome", "home", "bank", "kick", "leave"));
+                } else if (args.length == 2) {
+                    if (args[0].equalsIgnoreCase("invite") || args[0].equalsIgnoreCase("kick")) {
+                        completions.addAll(Bukkit.getOnlinePlayers().stream().map(Player::getName).collect(Collectors.toList()));
+                    } else if (args[0].equalsIgnoreCase("bank")) {
+                        completions.addAll(Arrays.asList("deposit", "withdraw"));
+                    }
+                }
+                break;
         }
 
         return completions.stream()
