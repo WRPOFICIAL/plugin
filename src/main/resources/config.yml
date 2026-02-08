@@ -4,24 +4,40 @@ plugin:
   language: "es"
   show-license: true
 
-item:
-  enabled: true
-  slot: 4 # 0-8 (4 is the middle slot)
+# Global item settings
+item-defaults:
   world: "world"
   material: PLAYER_HEAD
-  # Base64 texture for the head (optional, if empty uses material default)
-  # This is a generic "Globe" texture
-  texture: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYmFkYmE0MzY3MTM2YmFhYzFmNzY3Y2E3Y2IwZTU3N2UyYWUzYzFkYjQ5MWFjZThmNGRiM2Y4OTVjYzhkZDIifX19"
-  name: "&6&lWRP Survival &7(Click)"
   enchanted: true
   unmovable: true
-  # Command to execute when clicking
-  command: "server survival"
+  command: "server %server%"
 
-server:
-  name: "Survival"
-  max-players: 100
-  default-state: "OFFLINE"
+# List of servers to monitor
+servers:
+  survival:
+    display-name: "Survival"
+    address: "127.0.0.1:25565" # Change to real IP:Port
+    max-players: 100
+    auto-status: true # If true, it will ping the address
+    default-state: "OFFLINE"
+    item:
+      enabled: true
+      slot: 4
+      texture: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYmFkYmE0MzY3MTM2YmFhYzFmNzY3Y2E3Y2IwZTU3N2UyYWUzYzFkYjQ5MWFjZThmNGRiM2Y4OTVjYzhkZDIifX19"
+      name: "&6&lWRP Survival &7(Click)"
+  skyblock:
+    display-name: "Skyblock"
+    address: "127.0.0.1:25566"
+    max-players: 50
+    auto-status: false # Manual status
+    default-state: "MANTENIMIENTO"
+    item:
+      enabled: true
+      slot: 3
+      texture: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYmFkYmE0MzY3MTM2YmFhYzFmNzY3Y2E3Y2IwZTU3N2UyYWUzYzFkYjQ5MWFjZThmNGRiM2Y4OTVjYzhkZDIifX19"
+      name: "&b&lWRP Skyblock &7(Click)"
+
+server-settings:
   update-interval-seconds: 10
 
 scoreboard:
@@ -30,10 +46,10 @@ scoreboard:
   update-interval-seconds: 5
   lines:
     - "&7"
-    - "&7Estado:"
-    - "  %state_color%%state%"
-    - "&7Jugadores:"
-    - "  &f%players%/%max_players%"
+    - "&7Survival: %status_survival%"
+    - "&7Skyblock: %status_skyblock%"
+    - "&7"
+    - "&7Jugadores: &f%players%/%max_players%"
     - "&1"
     - "&eplay.wrpnetwork.net"
 

@@ -20,6 +20,7 @@ public class WRPHubStatus extends JavaPlugin {
     private StatusManager statusManager;
     private ItemManager itemManager;
     private ScoreboardManager scoreboardManager;
+    private PlaceholderProvider placeholderProvider;
 
     @Override
     public void onEnable() {
@@ -39,6 +40,7 @@ public class WRPHubStatus extends JavaPlugin {
 
         // Initialize managers
         statusManager = new StatusManager(this);
+        placeholderProvider = new PlaceholderProvider(this);
         itemManager = new ItemManager(this, statusManager);
         scoreboardManager = new ScoreboardManager(this, statusManager);
 
@@ -56,18 +58,34 @@ public class WRPHubStatus extends JavaPlugin {
     }
 
     private void startTasks() {
-        // Item update task
-        long itemInterval = getConfig().getLong("server.update-interval-seconds", 10);
-        if (itemInterval < 1) itemInterval = 1;
-        itemInterval *= 20L;
+        // Status ping task
+        long updateInterval = getConfig().getLong("server-settings.update-interval-seconds", 10);
+        if (updateInterval < 1) updateInterval = 1;
+        updateInterval *= 20L;
 
-        Bukkit.getScheduler().runTaskTimer(this, () -> {
-            if (getConfig().getBoolean("item.enabled", true)) {
-                for (org.bukkit.entity.Player player : Bukkit.getOnlinePlayers()) {
-                    itemManager.updatePlayerItem(player);
+        Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
+            for (StatusManager.ServerData data : statusManager.getServerDataMap().values()) {
+                if (data.isMaintenance()) continue;
+                if (data.isAutoStatus()) {
+                    ServerPinger.PingResult result = ServerPinger.ping(data.getAddress());
+                    if (result.online) {
+                        data.setCurrentState("ONLINE");
+                        data.setOnlinePlayers(result.playersOnline);
+                        data.setMaxPlayers(result.playersMax);
+                    } else {
+                        data.setCurrentState("OFFLINE");
+                        data.setOnlinePlayers(0);
+                    }
                 }
             }
-        }, itemInterval, itemInterval);
+        }, 20L, updateInterval);
+
+        // Item update task
+        Bukkit.getScheduler().runTaskTimer(this, () -> {
+            for (org.bukkit.entity.Player player : Bukkit.getOnlinePlayers()) {
+                itemManager.updatePlayerItems(player);
+            }
+        }, updateInterval, updateInterval);
 
         // Scoreboard update task
         long sbInterval = getConfig().getLong("scoreboard.update-interval-seconds", 5);
@@ -91,31 +109,28 @@ public class WRPHubStatus extends JavaPlugin {
         return scoreboardManager;
     }
 
+    public PlaceholderProvider getPlaceholderProvider() {
+        return placeholderProvider;
+    }
+
     @Override
     public void onDisable() {
         getLogger().info("WRP-HubStatus disabled.");
     }
 
     public void reloadSystems() {
-        // Stop existing tasks if any (though runTaskTimer returns a BukkitTask)
-        // For simplicity, we can just cancel all tasks from this plugin
+        // Stop existing tasks
         Bukkit.getScheduler().cancelTasks(this);
+
+        // Reload StatusManager data
+        statusManager.loadServers();
 
         // Re-start tasks
         startTasks();
 
         // Update all players immediately
         for (org.bukkit.entity.Player player : Bukkit.getOnlinePlayers()) {
-            if (getConfig().getBoolean("item.enabled", true)) {
-                itemManager.updatePlayerItem(player);
-            } else {
-                // Clear item if disabled? The prompt doesn't specify but it's good practice.
-                int slot = getConfig().getInt("item.slot", 4);
-                if (player.getInventory().getItem(slot) != null) {
-                    // Only clear if it is our hub item
-                    // itemManager can provide a check
-                }
-            }
+            itemManager.updatePlayerItems(player);
 
             if (getConfig().getBoolean("scoreboard.enabled", true)) {
                 scoreboardManager.updateScoreboard(player);

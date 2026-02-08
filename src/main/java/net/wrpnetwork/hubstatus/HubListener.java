@@ -6,6 +6,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.inventory.InventoryType;
@@ -37,9 +38,7 @@ public class HubListener implements Listener {
     }
 
     private void giveItemsAndScoreboard(Player player) {
-        if (plugin.getConfig().getBoolean("item.enabled", true)) {
-            itemManager.updatePlayerItem(player);
-        }
+        itemManager.updatePlayerItems(player);
 
         // Initial scoreboard set
         if (plugin.getConfig().getBoolean("scoreboard.enabled", true)) {
@@ -57,7 +56,9 @@ public class HubListener implements Listener {
         if (isHubItem(item)) {
             event.setCancelled(true);
             Player player = event.getPlayer();
-            String command = plugin.getConfig().getString("item.command", "server survival");
+            String serverId = itemManager.getServerId(item);
+            String command = plugin.getConfig().getString("item-defaults.command", "server %server%")
+                    .replace("%server%", serverId);
             player.performCommand(command);
         }
     }
@@ -71,6 +72,15 @@ public class HubListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onInventoryClick(InventoryClickEvent event) {
+        if (event.getView().getTitle().equals(plugin.color("&8Administrar Estados"))) {
+            event.setCancelled(true);
+            if (event.getWhoClicked() instanceof Player) {
+                Player player = (Player) event.getWhoClicked();
+                handleGUIClick(player, event);
+            }
+            return;
+        }
+
         if (!plugin.getConfig().getBoolean("item.unmovable", true)) return;
 
         ItemStack item = event.getCurrentItem();
@@ -85,6 +95,33 @@ public class HubListener implements Listener {
                 event.setCancelled(true);
             }
         }
+    }
+
+    private void handleGUIClick(Player player, InventoryClickEvent event) {
+        ItemStack item = event.getCurrentItem();
+        if (item == null || item.getType() != Material.BEACON) return;
+
+        String displayName = org.bukkit.ChatColor.stripColor(item.getItemMeta().getDisplayName());
+        StatusManager.ServerData data = null;
+        for (StatusManager.ServerData sd : plugin.getStatusManager().getServerDataMap().values()) {
+            if (sd.getDisplayName().equalsIgnoreCase(displayName)) {
+                data = sd;
+                break;
+            }
+        }
+
+        if (data == null) return;
+
+        if (event.getClick() == ClickType.LEFT) {
+            data.setCurrentState("ONLINE");
+        } else if (event.getClick() == ClickType.RIGHT) {
+            data.setCurrentState("OFFLINE");
+        } else {
+            data.setCurrentState("MANTENIMIENTO");
+        }
+
+        player.sendMessage(plugin.getMessage("state-changed").replace("%state%", data.getCurrentState()));
+        new StatusGUI(plugin, plugin.getStatusManager()).open(player);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)

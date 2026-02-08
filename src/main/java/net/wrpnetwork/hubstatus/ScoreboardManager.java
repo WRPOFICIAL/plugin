@@ -21,6 +21,7 @@ public class ScoreboardManager {
     }
 
     public void updateScoreboard(Player player) {
+        if (player == null) return;
         if (!plugin.getConfig().getBoolean("scoreboard.enabled", true)) {
             if (player.getScoreboard() != Bukkit.getScoreboardManager().getMainScoreboard()) {
                 player.setScoreboard(Bukkit.getScoreboardManager().getMainScoreboard());
@@ -83,11 +84,7 @@ public class ScoreboardManager {
     }
 
     private String formatLine(String line) {
-        return plugin.color(line
-                .replace("%state%", statusManager.getCurrentState())
-                .replace("%state_color%", statusManager.getStateColor())
-                .replace("%players%", String.valueOf(Bukkit.getOnlinePlayers().size()))
-                .replace("%max_players%", String.valueOf(plugin.getConfig().getInt("server.max-players", 100))));
+        return plugin.getPlaceholderProvider().parse(null, line);
     }
 
     public void removeScoreboard(Player player) {

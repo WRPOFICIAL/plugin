@@ -4,8 +4,9 @@ import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.enchantments.Enchantment;
 import org.bukkit.NamespacedKey;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -27,41 +28,43 @@ public class ItemManager {
         this.statusManager = statusManager;
     }
 
-    public ItemStack createHubItem() {
-        String materialName = plugin.getConfig().getString("item.material", "PLAYER_HEAD");
+    public ItemStack createServerItem(StatusManager.ServerData data) {
+        ConfigurationSection serverSec = plugin.getConfig().getConfigurationSection("servers." + data.getId());
+        ConfigurationSection itemSec = serverSec.getConfigurationSection("item");
+
+        String materialName = plugin.getConfig().getString("item-defaults.material", "PLAYER_HEAD");
         Material material;
         try {
             material = Material.valueOf(materialName.toUpperCase());
         } catch (IllegalArgumentException e) {
-            plugin.getLogger().warning("Invalid material in config: " + materialName + ". Falling back to PLAYER_HEAD.");
             material = Material.PLAYER_HEAD;
         }
 
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
-
         if (meta == null) return item;
 
-        // Set Name
-        meta.setDisplayName(plugin.color(plugin.getConfig().getString("item.name", "&6&lWRP Survival &7(Click)")));
+        // Set Name and Lore with Placeholders
+        String name = itemSec != null ? itemSec.getString("name") : null;
+        if (name == null) name = "&6&l" + data.getDisplayName();
+        meta.setDisplayName(plugin.getPlaceholderProvider().parse(null, name));
 
-        // Set Lore
-        updateLore(meta);
+        updateLore(meta, data);
 
         // Enchantment Glow
-        if (plugin.getConfig().getBoolean("item.enchanted", true)) {
+        if (plugin.getConfig().getBoolean("item-defaults.enchanted", true)) {
             meta.addEnchant(Enchantment.LUCK, 1, true);
             meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
         }
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_DESTROYS, ItemFlag.HIDE_PLACED_ON);
 
-        // Set PersistentData to identify the item
+        // Set PersistentData
         NamespacedKey key = new NamespacedKey(plugin, "hub_item");
-        meta.getPersistentDataContainer().set(key, PersistentDataType.BYTE, (byte) 1);
+        meta.getPersistentDataContainer().set(key, PersistentDataType.STRING, data.getId());
 
-        // Custom Texture if PLAYER_HEAD
-        if (material == Material.PLAYER_HEAD && meta instanceof SkullMeta) {
-            String texture = plugin.getConfig().getString("item.texture");
+        // Custom Texture
+        if (material == Material.PLAYER_HEAD && meta instanceof SkullMeta && itemSec != null) {
+            String texture = itemSec.getString("texture");
             if (texture != null && !texture.isEmpty()) {
                 applyTexture((SkullMeta) meta, texture);
             }
@@ -71,51 +74,44 @@ public class ItemManager {
         return item;
     }
 
-    private void updateLore(ItemMeta meta) {
+    private void updateLore(ItemMeta meta, StatusManager.ServerData data) {
         List<String> lore = new ArrayList<>();
         lore.add("");
-        lore.add(plugin.color("&7Estado: " + statusManager.getStateColor() + statusManager.getCurrentState()));
-        lore.add(plugin.color("&7Jugadores: &f" + Bukkit.getOnlinePlayers().size() + "/" + plugin.getConfig().getInt("server.max-players", 100)));
+        lore.add(plugin.getPlaceholderProvider().parse(null, "&7Estado: %status_" + data.getId() + "%"));
+        lore.add(plugin.getPlaceholderProvider().parse(null, "&7Jugadores: &f%players_" + data.getId() + "%/%max_" + data.getId() + "%"));
         lore.add("");
         lore.add(plugin.color("&eClick para entrar"));
         meta.setLore(lore);
     }
 
-    public void updatePlayerItem(org.bukkit.entity.Player player) {
-        if (!plugin.getConfig().getBoolean("item.enabled", true)) return;
+    public void updatePlayerItems(org.bukkit.entity.Player player) {
+        if (!player.getWorld().getName().equalsIgnoreCase(plugin.getConfig().getString("item-defaults.world", "world"))) return;
 
-        String worldName = plugin.getConfig().getString("item.world", "world");
-        if (!player.getWorld().getName().equalsIgnoreCase(worldName)) return;
+        for (StatusManager.ServerData data : statusManager.getServerDataMap().values()) {
+            ConfigurationSection itemSec = plugin.getConfig().getConfigurationSection("servers." + data.getId() + ".item");
+            if (itemSec == null || !itemSec.getBoolean("enabled", true)) continue;
 
-        int slot = plugin.getConfig().getInt("item.slot", 4);
-        if (slot < 0 || slot > 35) {
-            plugin.getLogger().warning("Invalid slot in config: " + slot + ". Using default slot 4.");
-            slot = 4;
-        }
+            int slot = itemSec.getInt("slot", 4);
+            ItemStack currentItem = player.getInventory().getItem(slot);
+            ItemStack newItem = createServerItem(data);
 
-        ItemStack currentItem = player.getInventory().getItem(slot);
-        ItemStack newItem = createHubItem();
-
-        // Only update if it's our item or the slot is empty
-        if (currentItem == null || isHubItem(currentItem)) {
-            // Check if it's already exactly the same to avoid unnecessary packets
-            if (currentItem != null && currentItem.isSimilar(newItem)) {
-                return;
+            if (currentItem == null || isHubItem(currentItem)) {
+                if (currentItem != null && currentItem.isSimilar(newItem)) continue;
+                player.getInventory().setItem(slot, newItem);
             }
-            player.getInventory().setItem(slot, newItem);
-        } else {
-            // Slot is occupied by something else!
-            // We should probably not overwrite it unless we are sure.
-            // But the requirements say the item should be there.
-            // Let's at least log it or try to find an empty slot, but the req says "slot configurable".
-            // I'll stick to not overwriting if it's not a hub item, to be safe.
         }
     }
 
     public boolean isHubItem(ItemStack item) {
         if (item == null || !item.hasItemMeta()) return false;
         NamespacedKey key = new NamespacedKey(plugin, "hub_item");
-        return item.getItemMeta().getPersistentDataContainer().has(key, PersistentDataType.BYTE);
+        return item.getItemMeta().getPersistentDataContainer().has(key, PersistentDataType.STRING);
+    }
+
+    public String getServerId(ItemStack item) {
+        if (!isHubItem(item)) return null;
+        NamespacedKey key = new NamespacedKey(plugin, "hub_item");
+        return item.getItemMeta().getPersistentDataContainer().get(key, PersistentDataType.STRING);
     }
 
     private void applyTexture(SkullMeta meta, String base64) {
@@ -137,8 +133,6 @@ public class ItemManager {
             if (profileField != null) {
                 profileField.setAccessible(true);
                 profileField.set(meta, profile);
-            } else {
-                plugin.getLogger().warning("Could not find 'profile' field in SkullMeta.");
             }
         } catch (IllegalAccessException e) {
             plugin.getLogger().warning("Could not access 'profile' field in SkullMeta.");
