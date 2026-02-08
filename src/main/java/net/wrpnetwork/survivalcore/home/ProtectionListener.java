@@ -44,7 +44,8 @@ public class ProtectionListener implements Listener {
         List<net.wrpnetwork.survivalcore.database.DatabaseManager.HomeData> homes = plugin.getProtectionManager().getWorldHomes(loc.getWorld().getName());
         if (homes == null) return false;
         for (net.wrpnetwork.survivalcore.database.DatabaseManager.HomeData home : homes) {
-            if (home.x() == loc.getBlockX() && home.y() == loc.getBlockY() && home.z() == loc.getBlockZ()) {
+            // Compare block coordinates (int) to ensure it works even if the sethome was slightly offset
+            if ((int)home.x() == loc.getBlockX() && (int)home.y() == loc.getBlockY() && (int)home.z() == loc.getBlockZ()) {
                 return true;
             }
         }

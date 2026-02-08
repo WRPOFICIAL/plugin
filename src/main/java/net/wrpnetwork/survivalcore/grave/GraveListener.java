@@ -46,6 +46,8 @@ public class GraveListener implements Listener {
             Player player = event.getPlayer();
             UUID owner = graveManager.getGraveOwner(event.getClickedBlock());
 
+            if (owner == null) return;
+
             if (owner.equals(player.getUniqueId()) || player.hasPermission("survivalcore.graves.admin")) {
                 graveManager.removeGrave(event.getClickedBlock().getLocation(), true);
                 plugin.getMessageManager().sendMessage(player, "<green>✔ Has recuperado tus pertenencias.</green>");

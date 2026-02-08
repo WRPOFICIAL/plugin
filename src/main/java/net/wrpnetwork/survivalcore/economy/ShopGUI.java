@@ -179,6 +179,7 @@ public class ShopGUI implements Listener {
             if (is != null && is.getType() == mat) {
                 if (is.getAmount() > remaining) {
                     is.setAmount(is.getAmount() - remaining);
+                    player.getInventory().setItem(i, is);
                     remaining = 0;
                 } else {
                     remaining -= is.getAmount();

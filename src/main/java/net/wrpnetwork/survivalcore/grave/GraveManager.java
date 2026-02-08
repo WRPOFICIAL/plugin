@@ -18,13 +18,18 @@ import java.util.*;
 public class GraveManager {
 
     private final SurvivalCore plugin;
-    private final Map<Location, Grave> activeGraves = new HashMap<>();
+    private final Map<String, Grave> activeGraves = new HashMap<>();
     private final NamespacedKey graveKey;
 
     public GraveManager(SurvivalCore plugin) {
         this.plugin = plugin;
         this.graveKey = new NamespacedKey(plugin, "grave_owner");
         loadGraves();
+    }
+
+    private String getLocKey(Location loc) {
+        if (loc == null || loc.getWorld() == null) return "unknown";
+        return loc.getWorld().getName() + ":" + loc.getBlockX() + ":" + loc.getBlockY() + ":" + loc.getBlockZ();
     }
 
     private void loadGraves() {
@@ -35,26 +40,30 @@ public class GraveManager {
             Location loc = new Location(world, d.x(), d.y(), d.z());
             ItemStack[] items = net.wrpnetwork.survivalcore.util.InventoryUtils.itemStackArrayFromBase64(d.itemsBase64());
 
-            // Recreate hologram
-            ArmorStand hologram = (ArmorStand) loc.getWorld().spawnEntity(loc.clone().add(0.5, 0.0, 0.5), EntityType.ARMOR_STAND);
-            hologram.setVisible(false);
-            hologram.setGravity(false);
-            hologram.setMarker(true);
-            hologram.setCustomNameVisible(true);
             String ownerName = Bukkit.getOfflinePlayer(d.owner()).getName();
             if (ownerName == null) ownerName = "Jugador";
+            String finalOwnerName = ownerName;
             String holoText = plugin.getConfig().getString("messages.grave-hologram", "<red>☠ Tumba de <player></red>")
-                    .replace("<player>", ownerName);
-            hologram.customName(plugin.getMessageManager().parse(holoText));
+                    .replace("<player>", finalOwnerName);
 
-            activeGraves.put(loc, new Grave(d.owner(), loc, items, hologram, d.createdAt()));
+            // Recreate hologram using consumer for better reliability
+            ArmorStand hologram = world.spawn(loc.clone().add(0.5, 0.0, 0.5), ArmorStand.class, armorStand -> {
+                armorStand.setVisible(false);
+                armorStand.setGravity(false);
+                armorStand.setMarker(true);
+                armorStand.setCustomNameVisible(true);
+                armorStand.customName(plugin.getMessageManager().parse(holoText));
+            });
+
+            String key = getLocKey(loc);
+            activeGraves.put(key, new Grave(d.owner(), loc, items, hologram, d.createdAt()));
 
             // Re-schedule despawn
             long elapsed = System.currentTimeMillis() - d.createdAt();
             long remaining = (plugin.getConfig().getInt("graves.despawn-minutes", 15) * 60 * 1000L) - elapsed;
             if (remaining > 0) {
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                    if (activeGraves.containsKey(loc)) {
+                    if (activeGraves.containsKey(key)) {
                         removeGrave(loc, true);
                     }
                 }, remaining / 50L);
@@ -82,19 +91,22 @@ public class GraveManager {
             skull.update();
         }
 
-        // Create Hologram
-        ArmorStand hologram = (ArmorStand) loc.getWorld().spawnEntity(loc.clone().add(0.5, 0.0, 0.5), EntityType.ARMOR_STAND);
-        hologram.setVisible(false);
-        hologram.setGravity(false);
-        hologram.setMarker(true);
-        hologram.setCustomNameVisible(true);
         String holoText = plugin.getConfig().getString("messages.grave-hologram", "<red>☠ Tumba de <player></red>")
                 .replace("<player>", player.getName());
-        hologram.customName(plugin.getMessageManager().parse(holoText));
+
+        // Create Hologram using consumer
+        ArmorStand hologram = loc.getWorld().spawn(loc.clone().add(0.5, 0.0, 0.5), ArmorStand.class, armorStand -> {
+            armorStand.setVisible(false);
+            armorStand.setGravity(false);
+            armorStand.setMarker(true);
+            armorStand.setCustomNameVisible(true);
+            armorStand.customName(plugin.getMessageManager().parse(holoText));
+        });
 
         long now = System.currentTimeMillis();
         Grave grave = new Grave(player.getUniqueId(), loc, items, hologram, now);
-        activeGraves.put(loc, grave);
+        String key = getLocKey(loc);
+        activeGraves.put(key, grave);
 
         // Save to DB
         String itemsBase64 = net.wrpnetwork.survivalcore.util.InventoryUtils.itemStackArrayToBase64(items);
@@ -104,7 +116,6 @@ public class GraveManager {
 
         if (plugin.getConfig().getBoolean("graves.give-compass", true)) {
             ItemStack compass = new ItemStack(Material.COMPASS);
-            // In 1.20.1+ we can use CompassMeta to point to a location
             player.getInventory().addItem(compass);
             player.setCompassTarget(loc);
         }
@@ -117,21 +128,21 @@ public class GraveManager {
         // Auto-despawn task
         int minutes = plugin.getConfig().getInt("graves.despawn-minutes", 15);
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            if (activeGraves.containsKey(loc)) {
+            if (activeGraves.containsKey(key)) {
                 removeGrave(loc, true);
             }
         }, minutes * 60 * 20L);
     }
 
     public void removeGrave(Location loc, boolean dropItems) {
-        Location normalized = loc.getBlock().getLocation();
-        Grave grave = activeGraves.remove(normalized);
+        String key = getLocKey(loc);
+        Grave grave = activeGraves.remove(key);
         if (grave == null) return;
 
         // Remove from DB
-        plugin.getDatabaseManager().deleteGrave(normalized);
+        plugin.getDatabaseManager().deleteGrave(loc);
 
-        normalized.getBlock().setType(Material.AIR);
+        loc.getBlock().setType(Material.AIR);
         if (grave.hologram() != null) {
             grave.hologram().remove();
         }
@@ -146,7 +157,7 @@ public class GraveManager {
     }
 
     public Grave getGrave(Location loc) {
-        return activeGraves.get(loc.getBlock().getLocation());
+        return activeGraves.get(getLocKey(loc));
     }
 
     public boolean isGraveBlock(Block block) {
@@ -166,10 +177,11 @@ public class GraveManager {
     }
 
     private void startParticleTask(Location loc) {
+        String key = getLocKey(loc);
         new org.bukkit.scheduler.BukkitRunnable() {
             @Override
             public void run() {
-                if (!activeGraves.containsKey(loc)) {
+                if (!activeGraves.containsKey(key)) {
                     this.cancel();
                     return;
                 }
@@ -178,7 +190,7 @@ public class GraveManager {
         }.runTaskTimer(plugin, 20L, 20L);
     }
 
-    public Map<Location, Grave> getActiveGraves() {
+    public Map<String, Grave> getActiveGraves() {
         return activeGraves;
     }
 
