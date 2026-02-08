@@ -1,0 +1,8 @@
+enabled: "&aSistema de Hub activado."
+disabled: "&cSistema de Hub desactivado."
+no-permission: "&cNo tienes permisos para usar este comando."
+reloaded: "&aConfiguración recargada correctamente."
+state-changed: "&aEstado del servidor cambiado a &e%state%"
+usage: "&cUso: /wrphub <enable|disable|reload|status|setstate>"
+invalid-state: "&cEstado inválido. Usa: ONLINE, OFFLINE, MANTENIMIENTO"
+status-display: "&7Estado actual: %state_color%%state%"

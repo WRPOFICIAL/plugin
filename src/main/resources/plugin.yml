@@ -1,0 +1,23 @@
+name: WRP-HubStatus
+version: ${project.version}
+main: net.wrpnetwork.hubstatus.WRPHubStatus
+api-version: 1.20
+author: EGG Producciones
+description: WRP Hub Status System for WYLRP
+commands:
+  wrphub:
+    description: Main command for WRP-HubStatus
+    permission: wrphub.use
+permissions:
+  wrphub.use:
+    description: Allow using the Hub status item
+    default: true
+  wrphub.admin:
+    description: Administrative commands
+    default: op
+  wrphub.reload:
+    description: Reload the configuration
+    default: op
+  wrphub.setstate:
+    description: Change the server state
+    default: op

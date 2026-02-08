@@ -1,0 +1,41 @@
+# WRP-HubStatus Configuration
+plugin:
+  enabled: true
+  language: "es"
+  show-license: true
+
+item:
+  enabled: true
+  slot: 4 # 0-8 (4 is the middle slot)
+  world: "world"
+  material: PLAYER_HEAD
+  # Base64 texture for the head (optional, if empty uses material default)
+  # This is a generic "Globe" texture
+  texture: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYmFkYmE0MzY3MTM2YmFhYzFmNzY3Y2E3Y2IwZTU3N2UyYWUzYzFkYjQ5MWFjZThmNGRiM2Y4OTVjYzhkZDIifX19"
+  name: "&6&lWRP Survival &7(Click)"
+  enchanted: true
+  unmovable: true
+  # Command to execute when clicking
+  command: "server survival"
+
+server:
+  name: "Survival"
+  max-players: 100
+  default-state: "OFFLINE"
+  update-interval-seconds: 10
+
+scoreboard:
+  enabled: true
+  title: "&6&lWRP NETWORK"
+  update-interval-seconds: 5
+  lines:
+    - "&7"
+    - "&7Estado:"
+    - "  %state_color%%state%"
+    - "&7Jugadores:"
+    - "  &f%players%/%max_players%"
+    - "&1"
+    - "&eplay.wrpnetwork.net"
+
+messages:
+  prefix: "&8[&6WRP&8]"
