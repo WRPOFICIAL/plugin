@@ -3,6 +3,7 @@ package net.wrpnetwork.survivalcore;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import net.wrpnetwork.survivalcore.database.DatabaseManager;
 import net.wrpnetwork.survivalcore.util.MessageManager;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.logging.Level;
@@ -16,6 +17,10 @@ public class SurvivalCore extends JavaPlugin {
     private net.wrpnetwork.survivalcore.teleport.TeleportManager teleportManager;
     private net.wrpnetwork.survivalcore.grave.GraveManager graveManager;
     private net.wrpnetwork.survivalcore.build.BuildCommands buildCommands;
+    private net.wrpnetwork.survivalcore.economy.EconomyManager economyManager;
+    private net.wrpnetwork.survivalcore.economy.ShopGUI shopGUI;
+    private net.wrpnetwork.survivalcore.economy.NPCManager npcManager;
+    private net.wrpnetwork.survivalcore.protection.ProtectionManager protectionManager;
 
     @Override
     public void onEnable() {
@@ -32,6 +37,9 @@ public class SurvivalCore extends JavaPlugin {
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
+
+        this.protectionManager = new net.wrpnetwork.survivalcore.protection.ProtectionManager(this);
+        this.economyManager = new net.wrpnetwork.survivalcore.economy.EconomyManager(this);
 
         SurvivalTabCompleter tabCompleter = new SurvivalTabCompleter(this);
         getCommand("survivalcore").setExecutor(new CommandHandler(this));
@@ -61,6 +69,9 @@ public class SurvivalCore extends JavaPlugin {
 
             getCommand("home").setTabCompleter(tabCompleter);
             getCommand("delhome").setTabCompleter(tabCompleter);
+
+            getServer().getPluginManager().registerEvents(new net.wrpnetwork.survivalcore.home.ProtectionListener(this), this);
+            getServer().getPluginManager().registerEvents(new net.wrpnetwork.survivalcore.home.UpgradeListener(this), this);
         }
 
         if (getConfig().getBoolean("modules.graves", true)) {
@@ -81,6 +92,23 @@ public class SurvivalCore extends JavaPlugin {
 
             getServer().getPluginManager().registerEvents(new net.wrpnetwork.survivalcore.build.BuildListener(this, buildCommands), this);
         }
+
+        // Economy
+        this.shopGUI = new net.wrpnetwork.survivalcore.economy.ShopGUI(this);
+        this.npcManager = new net.wrpnetwork.survivalcore.economy.NPCManager(this, shopGUI);
+        net.wrpnetwork.survivalcore.economy.EconomyCommands ecoCommands = new net.wrpnetwork.survivalcore.economy.EconomyCommands(this);
+        getCommand("money").setExecutor(ecoCommands);
+        getCommand("shop").setExecutor(ecoCommands);
+        getCommand("eco").setExecutor(ecoCommands);
+        getCommand("spawnnpc").setExecutor((sender, command, label, args) -> {
+            if (sender instanceof Player p && p.isOp()) {
+                npcManager.spawnShopNPC(p.getLocation(), args.length > 0 ? String.join(" ", args) : "<gold>Tienda WRP</gold>");
+                return true;
+            }
+            return false;
+        });
+        getServer().getPluginManager().registerEvents(shopGUI, this);
+        getServer().getPluginManager().registerEvents(npcManager, this);
 
         sendStartupMessage();
     }
@@ -135,5 +163,13 @@ public class SurvivalCore extends JavaPlugin {
 
     public net.wrpnetwork.survivalcore.build.BuildCommands getBuildCommands() {
         return buildCommands;
+    }
+
+    public net.wrpnetwork.survivalcore.economy.EconomyManager getEconomyManager() {
+        return economyManager;
+    }
+
+    public net.wrpnetwork.survivalcore.protection.ProtectionManager getProtectionManager() {
+        return protectionManager;
     }
 }

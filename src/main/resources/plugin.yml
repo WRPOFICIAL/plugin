@@ -36,3 +36,12 @@ commands:
     description: Alternar modo construcción
   tumba:
     description: Información sobre tu tumba
+  money:
+    description: Ver tu saldo
+    aliases: [balance, bal]
+  shop:
+    description: Abrir la tienda
+  eco:
+    description: Administrar economía
+  spawnnpc:
+    description: Spawnear un NPC de tienda

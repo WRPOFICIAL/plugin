@@ -19,7 +19,7 @@ public class InventoryUtils {
                 dataOutput.writeObject(item);
             }
             dataOutput.close();
-            return Base64Coder.encodeLines(outputStream.toByteArray());
+            return java.util.Base64.getEncoder().encodeToString(outputStream.toByteArray());
         } catch (Exception e) {
             e.printStackTrace();
             return "";
@@ -28,7 +28,7 @@ public class InventoryUtils {
 
     public static ItemStack[] itemStackArrayFromBase64(String data) {
         try {
-            ByteArrayInputStream inputStream = new ByteArrayInputStream(Base64Coder.decodeLines(data));
+            ByteArrayInputStream inputStream = new ByteArrayInputStream(java.util.Base64.getDecoder().decode(data));
             BukkitObjectInputStream dataInput = new BukkitObjectInputStream(inputStream);
             ItemStack[] items = new ItemStack[dataInput.readInt()];
             for (int i = 0; i < items.length; i++) {

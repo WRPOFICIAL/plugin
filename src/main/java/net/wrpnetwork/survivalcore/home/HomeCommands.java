@@ -1,6 +1,7 @@
 package net.wrpnetwork.survivalcore.home;
 
 import net.wrpnetwork.survivalcore.SurvivalCore;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -10,6 +11,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 public class HomeCommands implements CommandExecutor {
 
@@ -39,6 +41,15 @@ public class HomeCommands implements CommandExecutor {
             case "delhome":
                 handleDelHome(player, args);
                 break;
+            case "trust":
+                handleTrust(player, args);
+                break;
+            case "untrust":
+                handleUntrust(player, args);
+                break;
+            case "info":
+                handleInfo(player, args);
+                break;
         }
 
         return true;
@@ -48,7 +59,11 @@ public class HomeCommands implements CommandExecutor {
         String name = args.length > 0 ? args[0].toLowerCase() : "home";
         List<String> currentHomes = plugin.getDatabaseManager().getHomes(player.getUniqueId());
 
-        if (!currentHomes.contains(name)) {
+        int currentLevel = 1;
+        net.wrpnetwork.survivalcore.database.DatabaseManager.HomeInfo existing = plugin.getDatabaseManager().getHome(player.getUniqueId(), name);
+        if (existing != null) {
+            currentLevel = existing.level();
+        } else {
             int limit = getHomeLimit(player);
             if (currentHomes.size() >= limit) {
                 plugin.getMessageManager().sendMessage(player, "<red>✖ Has alcanzado tu límite de hogares (" + limit + ").</red>");
@@ -56,23 +71,23 @@ public class HomeCommands implements CommandExecutor {
             }
         }
 
-        plugin.getDatabaseManager().saveHome(player.getUniqueId(), name, player.getLocation());
+        plugin.getDatabaseManager().saveHome(player.getUniqueId(), name, player.getLocation(), currentLevel);
+        plugin.getProtectionManager().updateHome(player.getUniqueId(), name, player.getLocation(), currentLevel);
         plugin.getMessageManager().sendMessage(player, plugin.getConfig().getString("messages.home-saved", "<green>✔ Hogar guardado correctamente.</green>"));
     }
 
     private void handleHome(Player player, String[] args) {
         String name = args.length > 0 ? args[0].toLowerCase() : "home";
-        Location loc = plugin.getDatabaseManager().getHome(player.getUniqueId(), name);
+        net.wrpnetwork.survivalcore.database.DatabaseManager.HomeInfo info = plugin.getDatabaseManager().getHome(player.getUniqueId(), name);
 
-        if (loc == null) {
+        if (info == null) {
             plugin.getMessageManager().sendMessage(player, "<red>✖ No existe un hogar con ese nombre.</red>");
             return;
         }
 
+        Location loc = info.location();
         // Use TeleportManager if available
         if (plugin.getConfig().getBoolean("modules.teleport", true)) {
-            // Need to expose teleportManager or find it
-            // For now, I'll use a direct teleport or get it from instance if I add a getter
             plugin.getTeleportManager().teleport(player, loc);
         } else {
             player.teleport(loc);
@@ -104,7 +119,62 @@ public class HomeCommands implements CommandExecutor {
         }
 
         plugin.getDatabaseManager().deleteHome(player.getUniqueId(), name);
+        plugin.getProtectionManager().removeHome(player.getUniqueId(), name, player.getWorld().getName());
         plugin.getMessageManager().sendMessage(player, plugin.getConfig().getString("messages.home-deleted", "<green>✔ Hogar eliminado correctamente.</green>"));
+    }
+
+    private void handleTrust(Player player, String[] args) {
+        if (args.length < 2) {
+            plugin.getMessageManager().sendMessage(player, "<red>Uso: /home trust <hogar> <jugador></red>");
+            return;
+        }
+        String homeName = args[0].toLowerCase();
+        Player target = Bukkit.getPlayer(args[1]);
+        if (target == null) {
+            plugin.getMessageManager().sendMessage(player, "<red>Jugador no encontrado.</red>");
+            return;
+        }
+        if (plugin.getDatabaseManager().getHome(player.getUniqueId(), homeName) == null) {
+            plugin.getMessageManager().sendMessage(player, "<red>Ese hogar no existe.</red>");
+            return;
+        }
+        plugin.getDatabaseManager().addTrust(player.getUniqueId(), homeName, target.getUniqueId());
+        plugin.getProtectionManager().updateTrust(player.getUniqueId(), homeName);
+        plugin.getMessageManager().sendMessage(player, "<green>✔ Has dado permisos a " + target.getName() + " en " + homeName + ".</green>");
+    }
+
+    private void handleUntrust(Player player, String[] args) {
+        if (args.length < 2) {
+            plugin.getMessageManager().sendMessage(player, "<red>Uso: /home untrust <hogar> <jugador></red>");
+            return;
+        }
+        String homeName = args[0].toLowerCase();
+        org.bukkit.OfflinePlayer target = Bukkit.getOfflinePlayer(args[1]);
+        plugin.getDatabaseManager().removeTrust(player.getUniqueId(), homeName, target.getUniqueId());
+        plugin.getProtectionManager().updateTrust(player.getUniqueId(), homeName);
+        plugin.getMessageManager().sendMessage(player, "<yellow>✔ Has quitado permisos a " + target.getName() + " en " + homeName + ".</yellow>");
+    }
+
+    private void handleInfo(Player player, String[] args) {
+        String name = args.length > 0 ? args[0].toLowerCase() : "home";
+        net.wrpnetwork.survivalcore.database.DatabaseManager.HomeInfo info = plugin.getDatabaseManager().getHome(player.getUniqueId(), name);
+        if (info == null) {
+            plugin.getMessageManager().sendMessage(player, "<red>Ese hogar no existe.</red>");
+            return;
+        }
+        int radius = info.level() * 10;
+        plugin.getMessageManager().sendRawMessage(player, "<blue>🏠 Información de " + name + ":</blue>");
+        plugin.getMessageManager().sendRawMessage(player, "<grey>Nivel:</grey> <green>" + info.level() + "</green>");
+        plugin.getMessageManager().sendRawMessage(player, "<grey>Radio protección:</grey> <white>" + radius + " bloques</white>");
+        List<UUID> trusted = plugin.getDatabaseManager().getTrusted(player.getUniqueId(), name);
+        if (!trusted.isEmpty()) {
+            StringBuilder sb = new StringBuilder("<grey>Amigos:</grey> <white>");
+            for (UUID u : trusted) {
+                String uName = Bukkit.getOfflinePlayer(u).getName();
+                if (uName != null) sb.append(uName).append(" ");
+            }
+            plugin.getMessageManager().sendRawMessage(player, sb.toString().trim() + "</white>");
+        }
     }
 
     private int getHomeLimit(Player player) {

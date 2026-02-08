@@ -1,0 +1,132 @@
+package net.wrpnetwork.survivalcore.economy;
+
+import net.kyori.adventure.text.Component;
+import net.wrpnetwork.survivalcore.SurvivalCore;
+import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class ShopGUI implements Listener {
+
+    private final SurvivalCore plugin;
+    private final NamespacedKey itemKey;
+
+    public ShopGUI(SurvivalCore plugin) {
+        this.plugin = plugin;
+        this.itemKey = new NamespacedKey(plugin, "shop_item_id");
+    }
+
+    public void openShop(Player player) {
+        String title = plugin.getConfig().getString("shop.title", "<dark_aqua>Tienda SurvivalCore+</dark_aqua>");
+        Inventory inv = Bukkit.createInventory(null, 27, plugin.getMessageManager().parse(title));
+
+        if (plugin.getConfig().getConfigurationSection("shop.items") != null) {
+            for (String key : plugin.getConfig().getConfigurationSection("shop.items").getKeys(false)) {
+                String path = "shop.items." + key + ".";
+                Material mat = Material.valueOf(plugin.getConfig().getString(path + "material"));
+                String name = plugin.getConfig().getString(path + "name");
+                double buy = plugin.getConfig().getDouble(path + "buy-price");
+                double sell = plugin.getConfig().getDouble(path + "sell-price");
+                int slot = plugin.getConfig().getInt(path + "slot");
+                String special = plugin.getConfig().getString(path + "special", "");
+
+                addItem(inv, slot, mat, name, buy, sell, special);
+            }
+        }
+
+        player.openInventory(inv);
+    }
+
+    private void addItem(Inventory inv, int slot, Material mat, String name, double buyPrice, double sellPrice, String special) {
+        ItemStack item = new ItemStack(mat);
+        ItemMeta meta = item.getItemMeta();
+        meta.displayName(plugin.getMessageManager().parse(name));
+        List<Component> lore = new ArrayList<>();
+        if (buyPrice > 0) lore.add(plugin.getMessageManager().parse("<grey>Precio Compra: <green>$" + buyPrice + "</green></grey>"));
+        if (sellPrice > 0) lore.add(plugin.getMessageManager().parse("<grey>Precio Venta: <red>$" + sellPrice + "</red></grey>"));
+        lore.add(plugin.getMessageManager().parse("<yellow>Clic Izquierdo para Comprar</yellow>"));
+        if (sellPrice > 0) lore.add(plugin.getMessageManager().parse("<yellow>Clic Derecho para Vender</yellow>"));
+        meta.lore(lore);
+
+        // Tag for price info
+        meta.getPersistentDataContainer().set(new NamespacedKey(plugin, "buy_price"), PersistentDataType.DOUBLE, buyPrice);
+        meta.getPersistentDataContainer().set(new NamespacedKey(plugin, "sell_price"), PersistentDataType.DOUBLE, sellPrice);
+        if (!special.isEmpty()) {
+            meta.getPersistentDataContainer().set(new NamespacedKey(plugin, "special_type"), PersistentDataType.STRING, special);
+        }
+
+        item.setItemMeta(meta);
+        inv.setItem(slot, item);
+    }
+
+    @EventHandler
+    public void onClick(InventoryClickEvent event) {
+        String title = plugin.getConfig().getString("shop.title", "<dark_aqua>Tienda SurvivalCore+</dark_aqua>");
+        if (!event.getView().title().equals(plugin.getMessageManager().parse(title))) return;
+        event.setCancelled(true);
+
+        if (event.getCurrentItem() == null || event.getCurrentItem().getType() == Material.AIR) return;
+
+        Player player = (Player) event.getWhoClicked();
+        ItemStack item = event.getCurrentItem();
+        ItemMeta meta = item.getItemMeta();
+
+        Double buyPrice = meta.getPersistentDataContainer().get(new NamespacedKey(plugin, "buy_price"), PersistentDataType.DOUBLE);
+        Double sellPrice = meta.getPersistentDataContainer().get(new NamespacedKey(plugin, "sell_price"), PersistentDataType.DOUBLE);
+
+        if (event.isLeftClick() && buyPrice != null && buyPrice > 0) {
+            if (plugin.getEconomyManager().withdraw(player.getUniqueId(), buyPrice)) {
+                ItemStack bought = new ItemStack(item.getType());
+                String special = meta.getPersistentDataContainer().get(new NamespacedKey(plugin, "special_type"), PersistentDataType.STRING);
+                if ("upgrade_core".equals(special)) {
+                    // It's an upgrade core
+                    ItemMeta coreMeta = bought.getItemMeta();
+                    coreMeta.displayName(plugin.getMessageManager().parse("<gold>Núcleo de Mejora de Hogar</gold>"));
+                    List<Component> coreLore = new ArrayList<>();
+                    coreLore.add(plugin.getMessageManager().parse("<grey>Usa este núcleo en tu hogar para subir de nivel.</grey>"));
+                    coreLore.add(plugin.getMessageManager().parse("<yellow>Radio:</yellow> <white>+10 bloques</white>"));
+                    coreMeta.lore(coreLore);
+                    coreMeta.getPersistentDataContainer().set(new NamespacedKey(plugin, "home_upgrade"), PersistentDataType.INTEGER, 1);
+                    bought.setItemMeta(coreMeta);
+                }
+                player.getInventory().addItem(bought);
+                plugin.getMessageManager().sendMessage(player, "<green>✔ Has comprado " + item.getType().name() + " por $" + buyPrice + ".</green>");
+            } else {
+                plugin.getMessageManager().sendMessage(player, "<red>✖ No tienes suficiente dinero.</red>");
+            }
+        } else if (event.isRightClick() && sellPrice != null && sellPrice > 0) {
+            if (player.getInventory().contains(item.getType())) {
+                removeItem(player, item.getType(), 1);
+                plugin.getEconomyManager().addBalance(player.getUniqueId(), sellPrice);
+                plugin.getMessageManager().sendMessage(player, "<green>✔ Has vendido " + item.getType().name() + " por $" + sellPrice + ".</green>");
+            } else {
+                plugin.getMessageManager().sendMessage(player, "<red>✖ No tienes este objeto en tu inventario.</red>");
+            }
+        }
+    }
+
+    private void removeItem(Player player, Material mat, int amount) {
+        for (ItemStack is : player.getInventory().getContents()) {
+            if (is != null && is.getType() == mat) {
+                int newAmount = is.getAmount() - amount;
+                if (newAmount > 0) {
+                    is.setAmount(newAmount);
+                } else {
+                    player.getInventory().remove(is);
+                }
+                break;
+            }
+        }
+    }
+}

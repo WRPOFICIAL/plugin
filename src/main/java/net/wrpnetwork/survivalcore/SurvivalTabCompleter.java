@@ -43,6 +43,17 @@ public class SurvivalTabCompleter implements TabCompleter {
                 }
                 break;
             case "home":
+                if (args.length == 1) {
+                    completions.addAll(Arrays.asList("trust", "untrust", "info"));
+                    completions.addAll(plugin.getDatabaseManager().getHomes(player.getUniqueId()));
+                } else if (args.length == 2 && Arrays.asList("trust", "untrust", "info").contains(args[0].toLowerCase())) {
+                    completions.addAll(plugin.getDatabaseManager().getHomes(player.getUniqueId()));
+                } else if (args.length == 3 && Arrays.asList("trust", "untrust").contains(args[0].toLowerCase())) {
+                    completions.addAll(Bukkit.getOnlinePlayers().stream()
+                            .map(Player::getName)
+                            .collect(Collectors.toList()));
+                }
+                break;
             case "delhome":
                 if (args.length == 1) {
                     completions.addAll(plugin.getDatabaseManager().getHomes(player.getUniqueId()));

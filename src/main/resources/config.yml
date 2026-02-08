@@ -40,3 +40,32 @@ messages:
   grave-hologram: "<red>☠ Tumba de <player></red>"
 
 silent-mode: false
+
+shop:
+  title: "<dark_aqua>Tienda SurvivalCore+</dark_aqua>"
+  items:
+    diamond:
+      material: DIAMOND
+      name: "Diamante"
+      buy-price: 500
+      sell-price: 100
+      slot: 10
+    gold_ingot:
+      material: GOLD_INGOT
+      name: "Lingote de Oro"
+      buy-price: 200
+      sell-price: 40
+      slot: 11
+    iron_ingot:
+      material: IRON_INGOT
+      name: "Lingote de Hierro"
+      buy-price: 100
+      sell-price: 20
+      slot: 12
+    upgrade_core:
+      material: NETHER_STAR
+      name: "<gold>Núcleo de Mejora</gold>"
+      buy-price: 5000
+      sell-price: 0
+      slot: 13
+      special: upgrade_core
